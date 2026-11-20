@@ -1,0 +1,12 @@
+import request from 'supertest';
+import { createApp } from './app';
+
+describe('GET /api/health', () => {
+  it('returns 200 with an ok status', async () => {
+    const res = await request(createApp()).get('/api/health');
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('ok');
+    expect(res.body.service).toBe('salary-workspace-api');
+  });
+});
