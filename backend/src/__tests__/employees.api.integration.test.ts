@@ -146,3 +146,25 @@ describe('GET /api/employees/filters', () => {
     expect(res.body.jobTitles).toEqual(['Sales Manager', 'Software Engineer']);
   });
 });
+
+describe('GET /api/employees/:id', () => {
+  it('returns the employee with the expected fields', async () => {
+    const res = await request(app).get('/api/employees/EMP-TARGET');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      id: 'EMP-TARGET',
+      name: 'Zzz Target',
+      country: 'United States',
+      department: 'Sales',
+      jobTitle: 'Sales Manager',
+      currency: 'USD',
+    });
+    expect(typeof res.body.salary).toBe('string');
+  });
+
+  it('returns 404 for an unknown employee id', async () => {
+    const res = await request(app).get('/api/employees/EMP-DOES-NOT-EXIST');
+    expect(res.status).toBe(404);
+  });
+});

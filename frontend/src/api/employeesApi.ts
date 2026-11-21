@@ -5,6 +5,7 @@ export interface Employee {
   name: string;
   email: string;
   country: string;
+  department: string;
   jobTitle: string;
   salary: string; // decimal string
   currency: string;
@@ -53,7 +54,10 @@ export const employeesApi = createApi({
     getFilterOptions: builder.query<FilterOptions, void>({
       query: () => 'employees/filters',
     }),
+    getEmployee: builder.query<Employee, string>({
+      query: (id) => `employees/${id}`,
+    }),
   }),
 });
 
-export const { useGetEmployeesQuery, useGetFilterOptionsQuery } = employeesApi;
+export const { useGetEmployeesQuery, useGetFilterOptionsQuery, useGetEmployeeQuery } = employeesApi;

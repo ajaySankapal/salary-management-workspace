@@ -112,6 +112,20 @@
   font-variant-numeric: tabular-nums;
 }
 
+.nameButton {
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.nameButton:hover {
+  text-decoration: underline;
+}
+
 .pager {
   display: flex;
   align-items: center;

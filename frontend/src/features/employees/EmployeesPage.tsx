@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useGetEmployeesQuery, useGetFilterOptionsQuery } from '../../api/employeesApi';
 import { formatSalary, formatJoinedDate } from './formatSalary';
+import EmployeeDrawer from './EmployeeDrawer';
 import styles from './EmployeesPage.module.css';
 
 export default function EmployeesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const pageParam = Number(searchParams.get('page'));
   const page = Number.isInteger(pageParam) && pageParam >= 1 ? pageParam : 1;
@@ -46,6 +49,7 @@ export default function EmployeesPage() {
 
   return (
     <section>
+      <h1>Employees</h1>
       <div className={styles.toolbar}>
         <input
           type="search"
@@ -112,7 +116,11 @@ export default function EmployeesPage() {
                 {data.rows.map((employee) => (
                   <tr key={employee.id}>
                     <td>{employee.id}</td>
-                    <td>{employee.name}</td>
+                    <td>
+                      <button type="button" className={styles.nameButton} onClick={() => setSelectedId(employee.id)}>
+                        {employee.name}
+                      </button>
+                    </td>
                     <td>{employee.email}</td>
                     <td>{employee.country}</td>
                     <td>{employee.jobTitle}</td>
@@ -137,6 +145,8 @@ export default function EmployeesPage() {
           </div>
         </>
       )}
+
+      <EmployeeDrawer employeeId={selectedId} onClose={() => setSelectedId(null)} />
     </section>
   );
 }

@@ -7,11 +7,18 @@ export interface Employee {
   name: string;
   email: string;
   country: string;
+  department: string;
   jobTitle: string;
   salary: string; // decimal string (NUMERIC from the DB)
   currency: string;
   joinedDate: string; // YYYY-MM-DD
 }
+
+// The columns that make up an Employee, shared by the list and details queries.
+const EMPLOYEE_COLUMNS = `
+  id, name, email, country, department, job_title AS "jobTitle",
+  annual_salary AS salary, currency, to_char(joined_date, 'YYYY-MM-DD') AS "joinedDate"
+`;
 
 export interface EmployeeFilters {
   page: number;
@@ -62,8 +69,7 @@ export async function listEmployees(filters: EmployeeFilters) {
   const offset = (filters.page - 1) * PAGE_SIZE;
 
   const list = await query<Employee>(
-    `SELECT id, name, email, country, job_title AS "jobTitle", annual_salary AS salary, currency,
-            to_char(joined_date, 'YYYY-MM-DD') AS "joinedDate"
+    `SELECT ${EMPLOYEE_COLUMNS}
      FROM employees
      ${where}
      ORDER BY name, id
@@ -81,6 +87,12 @@ export async function listEmployees(filters: EmployeeFilters) {
     pageSize: PAGE_SIZE,
     total: count.rows[0].total,
   };
+}
+
+// Returns a single employee, or null if the id does not exist.
+export async function getEmployeeById(id: string): Promise<Employee | null> {
+  const result = await query<Employee>(`SELECT ${EMPLOYEE_COLUMNS} FROM employees WHERE id = $1`, [id]);
+  return result.rows[0] ?? null;
 }
 
 // Distinct values for the filter dropdowns.

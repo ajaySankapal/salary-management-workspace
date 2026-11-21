@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { HttpError } from '../errors';
-import { getFilterOptions, listEmployees } from './employees.repository';
+import { getEmployeeById, getFilterOptions, listEmployees } from './employees.repository';
 
 // Parses the ?page param: defaults to 1 when absent, or null if it is not a
 // positive whole number.
@@ -36,4 +36,13 @@ export async function getEmployees(req: Request, res: Response) {
 export async function getFilters(_req: Request, res: Response) {
   const options = await getFilterOptions();
   res.json(options);
+}
+
+// GET /api/employees/:id
+export async function getEmployee(req: Request, res: Response) {
+  const employee = await getEmployeeById(req.params.id);
+  if (!employee) {
+    throw new HttpError(404, 'Employee not found');
+  }
+  res.json(employee);
 }

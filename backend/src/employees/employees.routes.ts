@@ -1,9 +1,11 @@
 import { Router } from 'express';
 import { asyncHandler } from '../errors';
-import { getEmployees, getFilters } from './employees.controller';
+import { getEmployee, getEmployees, getFilters } from './employees.controller';
 
 // Mounted at /api/employees in app.ts.
 export const employeesRouter = Router();
 
 employeesRouter.get('/', asyncHandler(getEmployees));
+// /filters must come before /:id so it isn't treated as an employee id.
 employeesRouter.get('/filters', asyncHandler(getFilters));
+employeesRouter.get('/:id', asyncHandler(getEmployee));
