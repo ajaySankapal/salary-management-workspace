@@ -54,7 +54,10 @@ afterAll(() => pool?.end());
 describe('employees schema', () => {
   it('saves a decimal salary and reads it back unchanged (720000.50 INR)', async () => {
     await insertEmployee({ annualSalary: '720000.50' });
-    const { rows } = await pool.query('SELECT currency, annual_salary FROM employees');
+    const { rows } = await pool.query(
+      'SELECT currency, annual_salary FROM employees WHERE id = $1',
+      [baseEmployee.id],
+    );
     // pg returns NUMERIC as a string, so the exact decimal is preserved.
     expect(rows[0]).toEqual({ currency: 'INR', annual_salary: '720000.50' });
   });
