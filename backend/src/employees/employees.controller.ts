@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { HttpError } from '../errors';
-import { getEmployeeById, getFilterOptions, listEmployees, updateSalary } from './employees.repository';
+import { getEmployeeById, getFilterOptions, getSalaryHistory, listEmployees, updateSalary } from './employees.repository';
 
 // A valid salary amount: a positive number within the DB's numeric(12,2) range.
 function isValidAmount(raw: unknown): raw is string | number {
@@ -44,13 +44,14 @@ export async function getFilters(_req: Request, res: Response) {
   res.json(options);
 }
 
-// GET /api/employees/:id
+// GET /api/employees/:id — employee plus their salary-change history.
 export async function getEmployee(req: Request, res: Response) {
   const employee = await getEmployeeById(req.params.id);
   if (!employee) {
     throw new HttpError(404, 'Employee not found');
   }
-  res.json(employee);
+  const history = await getSalaryHistory(req.params.id);
+  res.json({ ...employee, history });
 }
 
 // POST /api/employees/:id/salary  { amount, reason, previousAmount }

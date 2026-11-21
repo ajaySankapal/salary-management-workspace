@@ -12,6 +12,18 @@ export interface Employee {
   joinedDate: string; // YYYY-MM-DD
 }
 
+export interface SalaryHistoryEntry {
+  id: number;
+  previousAmount: string | null;
+  newAmount: string;
+  reason: string;
+  changedAt: string; // YYYY-MM-DD
+}
+
+export interface EmployeeDetails extends Employee {
+  history: SalaryHistoryEntry[];
+}
+
 export interface EmployeesPage {
   rows: Employee[];
   page: number;
@@ -33,6 +45,13 @@ export interface FilterOptions {
   jobTitles: string[];
 }
 
+export interface SalaryUpdateInput {
+  id: string;
+  amount: string;
+  reason: string;
+  previousAmount: string;
+}
+
 function toQueryString(args: EmployeesQuery): string {
   const params = new URLSearchParams();
   params.set('page', String(args.page));
@@ -45,19 +64,41 @@ function toQueryString(args: EmployeesQuery): string {
 
 export const employeesApi = createApi({
   reducerPath: 'employeesApi',
-  // Calls the backend through the Vite dev proxy (/api -> :4000).
   baseQuery: fetchBaseQuery({ baseUrl: '/api' }),
+  tagTypes: ['Employee'],
   endpoints: (builder) => ({
     getEmployees: builder.query<EmployeesPage, EmployeesQuery>({
       query: (args) => `employees?${toQueryString(args)}`,
+      providesTags: (result) =>
+        result
+          ? [...result.rows.map((e) => ({ type: 'Employee' as const, id: e.id })), { type: 'Employee' as const, id: 'LIST' }]
+          : [{ type: 'Employee' as const, id: 'LIST' }],
     }),
     getFilterOptions: builder.query<FilterOptions, void>({
       query: () => 'employees/filters',
     }),
-    getEmployee: builder.query<Employee, string>({
+    getEmployee: builder.query<EmployeeDetails, string>({
       query: (id) => `employees/${id}`,
+      providesTags: (_result, _error, id) => [{ type: 'Employee', id }],
+    }),
+    updateSalary: builder.mutation<Employee, SalaryUpdateInput>({
+      query: ({ id, amount, reason, previousAmount }) => ({
+        url: `employees/${id}/salary`,
+        method: 'POST',
+        body: { amount, reason, previousAmount },
+      }),
+      // Refresh the open employee and the list after a successful change.
+      invalidatesTags: (_result, _error, { id }) => [
+        { type: 'Employee', id },
+        { type: 'Employee', id: 'LIST' },
+      ],
     }),
   }),
 });
 
-export const { useGetEmployeesQuery, useGetFilterOptionsQuery, useGetEmployeeQuery } = employeesApi;
+export const {
+  useGetEmployeesQuery,
+  useGetFilterOptionsQuery,
+  useGetEmployeeQuery,
+  useUpdateSalaryMutation,
+} = employeesApi;

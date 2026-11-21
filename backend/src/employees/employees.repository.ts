@@ -95,6 +95,27 @@ export async function getEmployeeById(id: string): Promise<Employee | null> {
   return result.rows[0] ?? null;
 }
 
+export interface SalaryHistoryEntry {
+  id: number;
+  previousAmount: string | null;
+  newAmount: string;
+  reason: string;
+  changedAt: string; // YYYY-MM-DD
+}
+
+// Salary change history for an employee, newest first.
+export async function getSalaryHistory(id: string): Promise<SalaryHistoryEntry[]> {
+  const result = await query<SalaryHistoryEntry>(
+    `SELECT id, previous_amount AS "previousAmount", new_amount AS "newAmount", reason,
+            to_char(changed_at, 'YYYY-MM-DD') AS "changedAt"
+     FROM salary_history
+     WHERE employee_id = $1
+     ORDER BY changed_at DESC, id DESC`,
+    [id],
+  );
+  return result.rows;
+}
+
 export interface SalaryUpdate {
   amount: string; // new salary, decimal string
   reason: string;

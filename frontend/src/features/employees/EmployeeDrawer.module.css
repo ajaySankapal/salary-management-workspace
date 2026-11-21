@@ -74,6 +74,145 @@
   color: var(--muted);
 }
 
+.sectionTitle {
+  margin: 1.75rem 0 0.75rem;
+  font-size: 1rem;
+}
+
+.currentNote {
+  margin: 0 0 0.75rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.updateCta {
+  margin-top: 1.5rem;
+  padding: 0.55rem 1.1rem;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.updateCta:hover {
+  background: var(--accent-hover);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.formActions {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.cancel {
+  padding: 0.5rem 1.1rem;
+  color: var(--text);
+  background: var(--card);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.cancel:hover {
+  background: #f3f4f6;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+}
+
+.field span {
+  color: var(--muted);
+}
+
+.field input {
+  height: 2.4rem;
+  padding: 0 0.7rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.field input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.save {
+  align-self: flex-start;
+  padding: 0.5rem 1.1rem;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.save:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.save:disabled {
+  background: var(--border-strong);
+  cursor: not-allowed;
+}
+
+.stale {
+  padding: 0.75rem;
+  border: 1px solid #f0c36d;
+  background: #fdf6e3;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.stale p {
+  margin: 0 0 0.5rem;
+}
+
+.stale button {
+  padding: 0.35rem 0.8rem;
+  cursor: pointer;
+}
+
+.history {
+  margin-top: 0.5rem;
+}
+
+.historyList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.historyList li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.historyList li:last-child {
+  border-bottom: none;
+}
+
+.historyMeta {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
 .status {
   color: var(--muted);
 }

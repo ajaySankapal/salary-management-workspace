@@ -161,6 +161,7 @@ describe('GET /api/employees/:id', () => {
       currency: 'USD',
     });
     expect(typeof res.body.salary).toBe('string');
+    expect(Array.isArray(res.body.history)).toBe(true);
   });
 
   it('returns 404 for an unknown employee id', async () => {
