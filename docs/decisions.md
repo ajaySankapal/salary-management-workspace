@@ -143,6 +143,44 @@ created once is enough.
 - Setup order on a fresh machine: create the databases → `npm run migrate` →
   `npm run seed`.
 
+## Possible enhancement: cursor pagination
+
+Right now the employees list uses "offset" pagination — page 1 is the first 25
+rows, page 2 skips 25 and takes the next 25, and so on (`LIMIT 25 OFFSET ...` in
+SQL). This is simple and perfectly fine for our 10,000 rows.
+
+The catch with offset is that the database still has to walk past all the rows
+before the page you asked for. Page 2 skips 25 rows, but the last page skips
+almost 10,000 before handing back the final few. So the deeper the page, the more
+work the database does, even though you only get 25 rows back. At our size this
+is not noticeable, but on much bigger tables it gets slow, and rows can also
+shift between requests (if someone adds an employee, "page 2" can show a row you
+already saw).
+
+The fix for that is **cursor (a.k.a. keyset) pagination**: instead of "give me
+page 5," the client says "give me the next 25 after this employee" — using the
+last row we saw as a bookmark (here that would be the last name + id, since
+that's our sort order). The query becomes roughly:
+
+```
+WHERE (name, id) > (lastName, lastId)
+ORDER BY name, id
+LIMIT 25
+```
+
+Because the database jumps straight to that spot (using the index) and reads 25
+rows, it stays fast no matter how deep you go, and it doesn't double-show rows
+when data changes.
+
+The trade-off: cursor pagination is "next / previous" style. You can't jump
+straight to an arbitrary page number like "page 50" or show "page 5 of 400",
+because there's no offset to count — you only ever move relative to where you
+are. It's a great fit for infinite scroll or very large lists.
+
+For this app we're keeping offset pagination (simpler, and 10k rows is small).
+Cursor pagination is noted here as the upgrade path if the dataset grows a lot or
+we switch the UI to infinite scroll.
+
 ## Small known annoyances (not bugs)
 
 - `node-pg-migrate` pulls in a dev-only package with a moderate security notice.
