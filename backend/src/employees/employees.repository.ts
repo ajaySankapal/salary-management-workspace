@@ -1,4 +1,4 @@
-import { query } from '../db/pool';
+import { query, withTransaction } from '../db/pool';
 
 const PAGE_SIZE = 10;
 
@@ -93,6 +93,46 @@ export async function listEmployees(filters: EmployeeFilters) {
 export async function getEmployeeById(id: string): Promise<Employee | null> {
   const result = await query<Employee>(`SELECT ${EMPLOYEE_COLUMNS} FROM employees WHERE id = $1`, [id]);
   return result.rows[0] ?? null;
+}
+
+export interface SalaryUpdate {
+  amount: string; // new salary, decimal string
+  reason: string;
+  previousAmount: string; // the salary the client last saw (optimistic check)
+}
+
+export type SalaryUpdateResult =
+  | { ok: true; employee: Employee }
+  | { ok: false; reason: 'not_found' | 'stale' };
+
+// Updates the current salary and records a history entry in one transaction.
+// Rejects (without any change) if the employee is gone, or if its current
+// salary no longer matches previousAmount (someone else changed it first).
+export async function updateSalary(id: string, input: SalaryUpdate): Promise<SalaryUpdateResult> {
+  return withTransaction(async (client) => {
+    // Lock the row so a concurrent update can't slip in between check and write.
+    const current = await client.query<{ annual_salary: string }>(
+      'SELECT annual_salary FROM employees WHERE id = $1 FOR UPDATE',
+      [id],
+    );
+    if (current.rowCount === 0) {
+      return { ok: false, reason: 'not_found' };
+    }
+    const dbAmount = current.rows[0].annual_salary;
+    if (Number(dbAmount) !== Number(input.previousAmount)) {
+      return { ok: false, reason: 'stale' };
+    }
+
+    await client.query('UPDATE employees SET annual_salary = $1 WHERE id = $2', [input.amount, id]);
+    await client.query(
+      `INSERT INTO salary_history (employee_id, previous_amount, new_amount, reason)
+       VALUES ($1, $2, $3, $4)`,
+      [id, dbAmount, input.amount, input.reason],
+    );
+
+    const updated = await client.query<Employee>(`SELECT ${EMPLOYEE_COLUMNS} FROM employees WHERE id = $1`, [id]);
+    return { ok: true, employee: updated.rows[0] };
+  });
 }
 
 // Distinct values for the filter dropdowns.

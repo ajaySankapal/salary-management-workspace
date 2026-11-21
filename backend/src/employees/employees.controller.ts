@@ -1,6 +1,12 @@
 import type { Request, Response } from 'express';
 import { HttpError } from '../errors';
-import { getEmployeeById, getFilterOptions, listEmployees } from './employees.repository';
+import { getEmployeeById, getFilterOptions, listEmployees, updateSalary } from './employees.repository';
+
+// A valid salary amount: a positive number within the DB's numeric(12,2) range.
+function isValidAmount(raw: unknown): raw is string | number {
+  const value = Number(raw);
+  return (typeof raw === 'string' || typeof raw === 'number') && Number.isFinite(value) && value >= 0.01 && value <= 9999999999.99;
+}
 
 // Parses the ?page param: defaults to 1 when absent, or null if it is not a
 // positive whole number.
@@ -45,4 +51,34 @@ export async function getEmployee(req: Request, res: Response) {
     throw new HttpError(404, 'Employee not found');
   }
   res.json(employee);
+}
+
+// POST /api/employees/:id/salary  { amount, reason, previousAmount }
+export async function updateEmployeeSalary(req: Request, res: Response) {
+  const { amount, reason, previousAmount } = req.body ?? {};
+
+  if (!isValidAmount(amount)) {
+    throw new HttpError(400, 'amount must be a positive number');
+  }
+  if (typeof reason !== 'string' || reason.trim() === '') {
+    throw new HttpError(400, 'reason is required');
+  }
+  if (!isValidAmount(previousAmount)) {
+    throw new HttpError(400, 'previousAmount must be a number');
+  }
+
+  const result = await updateSalary(req.params.id, {
+    amount: String(amount),
+    reason: reason.trim(),
+    previousAmount: String(previousAmount),
+  });
+
+  if (!result.ok) {
+    if (result.reason === 'not_found') {
+      throw new HttpError(404, 'Employee not found');
+    }
+    throw new HttpError(409, 'This record was changed by someone else. Reload and try again.');
+  }
+
+  res.json(result.employee);
 }
