@@ -1,4 +1,4 @@
-import { Pool } from 'pg';
+import { Pool, type QueryResult, type QueryResultRow } from 'pg';
 
 // One shared connection pool for the whole backend.
 let pool: Pool | undefined;
@@ -19,6 +19,17 @@ export function getPool(): Pool {
     pool = new Pool({ connectionString });
   }
   return pool;
+}
+
+/**
+ * Runs a SQL query on the shared pool. Repositories use this so they don't
+ * each have to reach for the pool themselves.
+ */
+export function query<T extends QueryResultRow>(
+  text: string,
+  params?: unknown[],
+): Promise<QueryResult<T>> {
+  return getPool().query<T>(text, params);
 }
 
 /** Closes the shared pool. Used by scripts and tests for a clean exit. */

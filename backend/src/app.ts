@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import { employeesRouter } from './employees/employees.routes';
+import { errorHandler, HttpError } from './errors';
 
 // Builds the Express app without binding a port, so tests can call it directly.
 export function createApp() {
@@ -15,6 +17,12 @@ export function createApp() {
       time: new Date().toISOString(),
     });
   });
+
+  app.use('/api/employees', employeesRouter);
+
+  // Unknown routes and errors both end up here, as JSON.
+  app.use((_req, _res, next) => next(new HttpError(404, 'Not found')));
+  app.use(errorHandler);
 
   return app;
 }

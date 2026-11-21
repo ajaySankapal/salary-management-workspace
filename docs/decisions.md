@@ -50,6 +50,34 @@ edits someone's salary and we run the seed again, the edit stays. The seed only
 fills in people who are missing. The current salary lives on the employee row;
 `salary_history` is a separate log for later.
 
+## Backend structure: routes → controller → repository
+
+We keep each feature in its own folder (e.g. `backend/src/employees/`) split into
+three small files, instead of putting everything in `app.ts`:
+
+- **routes** (`*.routes.ts`) — just maps URLs to handlers, nothing else.
+- **controller** (`*.controller.ts`) — reads the request, validates input, calls
+  the repository, and sends the response.
+- **repository** (`*.repository.ts`) — the database access (the SQL).
+
+`app.ts` only sets up middleware, mounts the routers, and wires the error
+handler. This keeps each file short and easy to find, and it's the normal shape
+for an Express app, so new features follow the same pattern.
+
+A couple of conventions inside these layers:
+
+- Repositories don't fetch the connection themselves. The db module
+  (`db/pool.ts`) owns the shared pool and exposes a small `query()` helper, so a
+  repository just calls `query(sql, params)` — no pool plumbing in each function.
+- Controllers put the result in a named variable before sending it, e.g.
+  `const result = await listEmployees(page); res.json(result);` rather than
+  `res.json(await ...)`. It reads better and is easier to debug.
+
+Errors are handled in one place: routes are wrapped so any thrown error reaches a
+single error middleware (`errors.ts`), which turns it into a JSON response. A
+route signals a specific status by throwing `new HttpError(400, '...')`; anything
+unexpected becomes a 500.
+
 ## Database: plain `pg`, not an ORM
 
 We talk to Postgres with the `pg` driver and write SQL ourselves, instead of
