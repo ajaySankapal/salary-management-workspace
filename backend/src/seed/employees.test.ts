@@ -14,11 +14,27 @@ describe('generateEmployees', () => {
     expect(generateEmployees()).toEqual(employees);
   });
 
-  it('gives every salary a valid two-decimal amount', () => {
+  it('gives every salary a valid whole, two-decimal amount', () => {
     for (const e of employees) {
-      expect(e.annualSalary).toMatch(/^\d+\.\d{2}$/);
+      expect(e.annualSalary).toMatch(/^\d+\.00$/); // whole amounts only
       expect(Number(e.annualSalary)).toBeGreaterThan(0);
     }
+  });
+
+  it('gives every employee a unique email', () => {
+    const emails = employees.map((e) => e.email);
+    expect(new Set(emails).size).toBe(EMPLOYEE_COUNT);
+    expect(emails[0]).toMatch(/^[a-z0-9.]+@salaryworkspace\.example$/);
+  });
+
+  it('keeps duplicate full names low (only a handful per country)', () => {
+    const counts = new Map<string, number>();
+    for (const e of employees) {
+      const key = `${e.country}|${e.name}`;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    const maxRepeat = Math.max(...counts.values());
+    expect(maxRepeat).toBeLessThanOrEqual(4);
   });
 
   // The three example report questions must return useful results.
@@ -36,6 +52,6 @@ describe('generateEmployees', () => {
     const countriesWithSWE = new Set(
       employees.filter((e) => e.jobTitle === 'Software Engineer').map((e) => e.country),
     );
-    expect(countriesWithSWE.size).toBe(5);
+    expect(countriesWithSWE.size).toBe(4);
   });
 });

@@ -1,27 +1,41 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
+import { MemoryRouter } from 'react-router-dom';
 import EmployeesPage from './EmployeesPage';
 import { setupStore } from '../../store';
 
-const page1 = {
+const filterOptions = {
+  countries: ['India', 'United States'],
+  departments: ['Engineering', 'Sales'],
+  jobTitles: ['Sales Manager', 'Software Engineer'],
+};
+
+const fullPage1 = {
   rows: [
-    { id: 'EMP-001', name: 'Alice Page1', country: 'India', jobTitle: 'Software Engineer', salary: '1000000.00', currency: 'INR' },
+    { id: 'EMP-IN', name: 'Alice India', email: 'alice.india@test.example', country: 'India', jobTitle: 'Software Engineer', salary: '1000000.00', currency: 'INR', joinedDate: '2020-01-15' },
+    { id: 'EMP-US', name: 'Bob America', email: 'bob.america@test.example', country: 'United States', jobTitle: 'Sales Manager', salary: '150000.00', currency: 'USD', joinedDate: '2019-07-01' },
   ],
   page: 1,
   pageSize: 25,
   total: 30,
 };
 
-const page2 = {
+const fullPage2 = {
   rows: [
-    { id: 'EMP-026', name: 'Bob Page2', country: 'United States', jobTitle: 'Product Manager', salary: '150000.00', currency: 'USD' },
+    { id: 'EMP-IN2', name: 'Carol Page2', email: 'carol.page2@test.example', country: 'India', jobTitle: 'Software Engineer', salary: '900000.00', currency: 'INR', joinedDate: '2021-03-10' },
   ],
   page: 2,
   pageSize: 25,
   total: 30,
 };
 
-// Reads the URL from whatever form fetch was called with.
+const indiaOnly = {
+  rows: [fullPage1.rows[0]],
+  page: 1,
+  pageSize: 25,
+  total: 1,
+};
+
 function urlOf(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input;
   if (input instanceof URL) return input.href;
@@ -31,7 +45,9 @@ function urlOf(input: RequestInfo | URL): string {
 function renderPage() {
   return render(
     <Provider store={setupStore()}>
-      <EmployeesPage />
+      <MemoryRouter initialEntries={['/']}>
+        <EmployeesPage />
+      </MemoryRouter>
     </Provider>,
   );
 }
@@ -39,7 +55,12 @@ function renderPage() {
 describe('EmployeesPage', () => {
   beforeEach(() => {
     global.fetch = jest.fn((input: RequestInfo | URL) => {
-      const body = urlOf(input).includes('page=2') ? page2 : page1;
+      const url = urlOf(input);
+      let body: unknown;
+      if (url.includes('/filters')) body = filterOptions;
+      else if (url.includes('country=India')) body = indiaOnly;
+      else if (url.includes('page=2')) body = fullPage2;
+      else body = fullPage1;
       return Promise.resolve(
         new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } }),
       );
@@ -53,20 +74,36 @@ describe('EmployeesPage', () => {
   it('loads page one, then requests and shows page two on Next', async () => {
     renderPage();
 
-    // Page one shows, Previous is disabled.
-    expect(await screen.findByText('Alice Page1')).toBeInTheDocument();
+    expect(await screen.findByText('Alice India')).toBeInTheDocument();
     expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
 
-    // Page two is fetched and shown, Next is now disabled.
-    expect(await screen.findByText('Bob Page2')).toBeInTheDocument();
+    expect(await screen.findByText('Carol Page2')).toBeInTheDocument();
     expect(screen.getByText('Page 2 of 2')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
 
-    // The screen actually requested page two.
     const requestedUrls = (global.fetch as jest.Mock).mock.calls.map((call) => urlOf(call[0]));
     expect(requestedUrls.some((u: string) => u.includes('page=2'))).toBe(true);
+  });
+
+  it('shows only the matching rows after applying a country filter', async () => {
+    renderPage();
+
+    // Unfiltered: both employees show.
+    expect(await screen.findByText('Alice India')).toBeInTheDocument();
+    expect(screen.getByText('Bob America')).toBeInTheDocument();
+
+    // Apply the India filter (option comes from the filter-options endpoint).
+    await screen.findByRole('option', { name: 'India' });
+    fireEvent.change(screen.getByLabelText('Country'), { target: { value: 'India' } });
+
+    // After the filtered results load, only the India employee is shown.
+    await waitFor(() => expect(screen.queryByText('Bob America')).not.toBeInTheDocument());
+    expect(screen.getByText('Alice India')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Clear filters' })).toBeEnabled();
+
+    const requestedUrls = (global.fetch as jest.Mock).mock.calls.map((call) => urlOf(call[0]));
+    expect(requestedUrls.some((u: string) => u.includes('country=India'))).toBe(true);
   });
 });

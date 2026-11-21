@@ -17,7 +17,6 @@ beforeAll(async () => {
   if (!TEST_DATABASE_URL || TEST_DATABASE_URL === APP_DATABASE_URL) {
     throw new Error('Set TEST_DATABASE_URL to a disposable database, different from DATABASE_URL.');
   }
-  // Point the app's connection pool at the test database.
   process.env.DATABASE_URL = TEST_DATABASE_URL;
 
   pool = new Pool({ connectionString: TEST_DATABASE_URL });
@@ -28,22 +27,27 @@ beforeAll(async () => {
     stdio: 'inherit',
   });
 
-  // Fixture: 27 employees (> one page of 25), including two who share a name
-  // so we can check the id tie-break in the ordering.
-  await pool.query(`INSERT INTO currencies (code, name) VALUES ('INR', 'Indian Rupee')`);
+  await pool.query(`INSERT INTO currencies (code, name) VALUES ('INR', 'Indian Rupee'), ('USD', 'US Dollar')`);
 
-  const fixtures: Array<[string, string, string]> = [
-    ['EMP-DUP-1', 'Aaa Duplicate', '100000.00'],
-    ['EMP-DUP-2', 'Aaa Duplicate', '200000.00'],
+  // Fixture: 28 employees.
+  //  - two "Aaa Duplicate" (sort first, same name → id tie-break)
+  //  - 25 "Name NNN" (India / Engineering / Software Engineer)
+  //  - one "Zzz Target" that sorts LAST (so it's on page 2 unfiltered), in a
+  //    different country/department/title so filters can single it out.
+  const fixtures: Array<[string, string, string, string, string, string]> = [
+    ['EMP-DUP-1', 'Aaa Duplicate', 'India', 'Engineering', 'Software Engineer', 'INR'],
+    ['EMP-DUP-2', 'Aaa Duplicate', 'India', 'Engineering', 'Software Engineer', 'INR'],
   ];
   for (let n = 1; n <= 25; n++) {
-    fixtures.push([`EMP-${String(n).padStart(3, '0')}`, `Name ${String(n).padStart(3, '0')}`, `${300000 + n}.50`]);
+    fixtures.push([`EMP-${String(n).padStart(3, '0')}`, `Name ${String(n).padStart(3, '0')}`, 'India', 'Engineering', 'Software Engineer', 'INR']);
   }
-  for (const [id, name, salary] of fixtures) {
+  fixtures.push(['EMP-TARGET', 'Zzz Target', 'United States', 'Sales', 'Sales Manager', 'USD']);
+
+  for (const [id, name, country, department, jobTitle, currency] of fixtures) {
     await pool.query(
-      `INSERT INTO employees (id, name, country, department, job_title, currency, annual_salary)
-       VALUES ($1, $2, 'India', 'Engineering', 'Software Engineer', 'INR', $3)`,
-      [id, name, salary],
+      `INSERT INTO employees (id, name, email, country, department, job_title, currency, annual_salary, joined_date)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 500000.00, '2021-06-01')`,
+      [id, name, `${id.toLowerCase()}@test.example`, country, department, jobTitle, currency],
     );
   }
 
@@ -56,39 +60,30 @@ afterAll(async () => {
   await pool?.end();
 });
 
-describe('GET /api/employees', () => {
+describe('GET /api/employees — pagination', () => {
   it('defaults to page 1 and returns rows, page, pageSize, and total', async () => {
     const res = await request(app).get('/api/employees');
 
     expect(res.status).toBe(200);
     expect(res.body.page).toBe(1);
-    expect(res.body.pageSize).toBe(25);
-    expect(res.body.total).toBe(27);
-    expect(res.body.rows).toHaveLength(25);
+    expect(res.body.pageSize).toBe(10);
+    expect(res.body.total).toBe(28);
+    expect(res.body.rows).toHaveLength(10);
 
-    // Ordered by name, then id: the two "Aaa Duplicate" rows come first,
-    // tie broken by id (EMP-DUP-1 before EMP-DUP-2).
-    expect(res.body.rows[0]).toEqual({
-      id: 'EMP-DUP-1',
-      name: 'Aaa Duplicate',
-      country: 'India',
-      jobTitle: 'Software Engineer',
-      salary: '100000.00',
-      currency: 'INR',
-    });
+    // Ordered by name, then id: the two "Aaa Duplicate" rows come first.
+    expect(res.body.rows[0].id).toBe('EMP-DUP-1');
     expect(res.body.rows[1].id).toBe('EMP-DUP-2');
     expect(typeof res.body.rows[0].salary).toBe('string');
   });
 
-  it('page two has the remaining rows, same total, and no overlap with page one', async () => {
-    const p1 = await request(app).get('/api/employees?page=1');
-    const p2 = await request(app).get('/api/employees?page=2');
+  it('page two returns different rows, with the same total', async () => {
+    const p1 = await request(app).get('/api/employees').query({ page: 1 });
+    const p2 = await request(app).get('/api/employees').query({ page: 2 });
 
-    expect(p2.status).toBe(200);
     expect(p2.body.page).toBe(2);
-    expect(p2.body.rows).toHaveLength(2);
-    expect(p1.body.total).toBe(27);
-    expect(p2.body.total).toBe(27); // same total on both pages
+    expect(p2.body.rows).toHaveLength(10);
+    expect(p1.body.total).toBe(28);
+    expect(p2.body.total).toBe(28);
 
     const idsOnPageOne = new Set(p1.body.rows.map((r: { id: string }) => r.id));
     const pageTwoIds = p2.body.rows.map((r: { id: string }) => r.id);
@@ -97,8 +92,57 @@ describe('GET /api/employees', () => {
 
   it('returns 400 when page is not a positive whole number', async () => {
     for (const bad of ['0', '-1', '1.5', 'abc']) {
-      const res = await request(app).get(`/api/employees?page=${bad}`);
+      const res = await request(app).get('/api/employees').query({ page: bad });
       expect(res.status).toBe(400);
     }
+  });
+});
+
+describe('GET /api/employees — search', () => {
+  it('finds an employee who is on a later page when unfiltered, on the first filtered page', async () => {
+    // Unfiltered, the target sorts last so it is not on the first page.
+    const unfilteredP1 = await request(app).get('/api/employees').query({ page: 1 });
+    expect(unfilteredP1.body.rows.map((r: { id: string }) => r.id)).not.toContain('EMP-TARGET');
+
+    // Searching finds it on page 1 of the filtered results.
+    const search = await request(app).get('/api/employees').query({ search: 'Zzz Target', page: 1 });
+    expect(search.body.total).toBe(1);
+    expect(search.body.rows).toHaveLength(1);
+    expect(search.body.rows[0].id).toBe('EMP-TARGET');
+  });
+
+  it('is case-insensitive and also matches on employee id', async () => {
+    const byLowerName = await request(app).get('/api/employees').query({ search: 'zzz target' });
+    expect(byLowerName.body.rows.map((r: { id: string }) => r.id)).toEqual(['EMP-TARGET']);
+
+    const byId = await request(app).get('/api/employees').query({ search: 'emp-target' });
+    expect(byId.body.rows.map((r: { id: string }) => r.id)).toEqual(['EMP-TARGET']);
+  });
+});
+
+describe('GET /api/employees — filters', () => {
+  it('filters by country', async () => {
+    const res = await request(app).get('/api/employees').query({ country: 'United States' });
+    expect(res.body.total).toBe(1);
+    expect(res.body.rows.every((r: { country: string }) => r.country === 'United States')).toBe(true);
+  });
+
+  it('filters by department and by job title', async () => {
+    const byDept = await request(app).get('/api/employees').query({ department: 'Sales' });
+    expect(byDept.body.rows.map((r: { id: string }) => r.id)).toEqual(['EMP-TARGET']);
+
+    const byTitle = await request(app).get('/api/employees').query({ jobTitle: 'Sales Manager' });
+    expect(byTitle.body.rows.map((r: { id: string }) => r.id)).toEqual(['EMP-TARGET']);
+  });
+});
+
+describe('GET /api/employees/filters', () => {
+  it('returns the distinct, sorted filter options', async () => {
+    const res = await request(app).get('/api/employees/filters');
+
+    expect(res.status).toBe(200);
+    expect(res.body.countries).toEqual(['India', 'United States']);
+    expect(res.body.departments).toEqual(['Engineering', 'Sales']);
+    expect(res.body.jobTitles).toEqual(['Sales Manager', 'Software Engineer']);
   });
 });

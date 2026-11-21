@@ -18,19 +18,21 @@ export async function seedEmployees(pool: Pool): Promise<number> {
   const employees = generateEmployees();
 
   await pool.query(
-    `INSERT INTO employees (id, name, country, department, job_title, currency, annual_salary)
+    `INSERT INTO employees (id, name, email, country, department, job_title, currency, annual_salary, joined_date)
      SELECT * FROM unnest(
-       $1::text[], $2::text[], $3::text[], $4::text[], $5::text[], $6::text[], $7::numeric[]
+       $1::text[], $2::text[], $3::text[], $4::text[], $5::text[], $6::text[], $7::text[], $8::numeric[], $9::date[]
      )
      ON CONFLICT (id) DO NOTHING`,
     [
       employees.map((e) => e.id),
       employees.map((e) => e.name),
+      employees.map((e) => e.email),
       employees.map((e) => e.country),
       employees.map((e) => e.department),
       employees.map((e) => e.jobTitle),
       employees.map((e) => e.currency),
       employees.map((e) => e.annualSalary),
+      employees.map((e) => e.joinedDate),
     ],
   );
 

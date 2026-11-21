@@ -4,44 +4,34 @@ _Log of the choices we've made and why._
 
 ---
 
-## Seeding: inline name lists, not Faker
+## Seeding: Faker for names, custom code for salaries
 
-Right now the seed makes up 10,000 fake employees using small lists of first and
-last names written directly in the code (`backend/src/seed/employees.ts`), plus
-our own country/department/job-title tables. We are **not** using Faker.
+The seed makes up 10,000 fake employees. It uses **Faker** (`@faker-js/faker`)
+for the names and joined dates, and our own code for the parts that are specific
+to this app — which countries exist, their currencies, the departments and job
+titles, and how salaries are worked out.
 
-Why not Faker? A few reasons:
+We started with hand-written name lists and our own random-number generator, but
+the name/repeat/random logic got hard to read and explain. Faker replaced all of
+that with one-liners anyone can follow: `faker.seed(...)` for repeatable data,
+`faker.person.firstName()` for a realistic name, `faker.date.between(...)` for a
+joined date. Because Faker has thousands of names, duplicate full names are rare
+on their own — so we deleted the custom code that used to avoid repeats.
 
-- The only thing Faker would really do for us is give fancier names. The parts
-  that actually matter — which countries exist, the departments and job titles,
-  and how salaries are calculated — are specific to this app and have to stay
-  custom anyway (otherwise the salary reports wouldn't make sense). So Faker
-  would only replace a line or two.
-- We want the seed to be easy to read and explain. A short list of names right
-  there in the file is about as clear as it gets.
-- We want the same data every run (so tests and demos are predictable). Our
-  little random generator is seeded with a fixed number, so it always produces
-  the same people. Faker can do this too, but then it's a dependency doing what
-  our few lines already do.
-- We've already had npm trip over itself a couple of times during installs.
-  Adding another package just for prettier names isn't worth the risk here.
+**Coherent names per country.** We use Faker's regional versions (`fakerEN_IN`,
+`fakerEN_US`, `fakerEN_GB`, `fakerDE`) so Indian employees get Indian names,
+German employees German names, and so on. We seed employees for four countries
+(India, US, UK, Germany) — all of which Faker has locales for, so the generator
+has no special cases. (We dropped Singapore from the sample because Faker has no
+Singapore locale; SGD is still a valid currency, just unused by the seed.)
 
-When *would* Faker be the right call? If we needed lots of varied, realistic
-fake data across many fields (emails, addresses, phone numbers, company names),
-or if name variety really mattered. For 20-ish names feeding a salary model,
-inline is simpler and does the job.
+The salary model stays custom because Faker can't know our pay logic:
+`country base × role multiplier × a random ±15%`, rounded to a clean thousand.
+Emails are built from the name, with a number added if one is already taken, so
+every email is unique.
 
-Rule of thumb we're following: **reference data → the database; small controlled
-fake data → inline in the seed; large, varied, realistic fake data → Faker.**
-
-## Seeding: our own tiny random generator
-
-Salaries and the random picks use a small seedable random-number function (a
-"linear congruential generator"). Plain JavaScript's `Math.random()` can't be
-given a fixed starting point, and we need the seed to be repeatable, so we have
-our own one-liner formula. We briefly used a fancier generator (mulberry32) but
-swapped it for the simpler one because it's much easier to explain, and for
-making up demo data the quality difference doesn't matter.
+Rule of thumb: **reference data → the database; app-specific data (salaries,
+departments) → our own code; realistic filler like names and dates → Faker.**
 
 ## Seeding: re-running never clobbers edits
 

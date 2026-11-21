@@ -81,8 +81,9 @@ Also left for later: approvals, future-dated changes, and currency conversion.
   country ever needs more than one currency, the per-currency rule already covers
   it, so nothing has to be redesigned.
 - **Sample countries:** India (INR), United States (USD), United Kingdom (GBP),
-  Germany (EUR), and Singapore (SGD). Five countries give a good spread of
-  currencies for the cross-country reports without making the sample data noisy.
+  and Germany (EUR). Four countries give a good spread of currencies for the
+  cross-country reports without making the sample data noisy. (SGD is still a
+  valid currency in the system, just not used by the seeded employees.)
 - **The current salary is simply the latest saved amount.** It is the easiest
   rule to explain and leaves a clear history trail; reports always use this one
   current amount per person, never the old history rows.

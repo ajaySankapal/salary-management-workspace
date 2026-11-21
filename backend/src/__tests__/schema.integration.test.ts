@@ -12,19 +12,21 @@ let pool: Pool;
 const baseEmployee = {
   id: 'EMP-0001',
   name: 'Asha Rao',
+  email: 'asha.rao@test.example',
   country: 'India',
   department: 'Engineering',
   jobTitle: 'Software Engineer',
   currency: 'INR',
   annualSalary: '500000.00',
+  joinedDate: '2020-01-15',
 };
 
 function insertEmployee(overrides: Partial<typeof baseEmployee> = {}) {
   const e = { ...baseEmployee, ...overrides };
   return pool.query(
-    `INSERT INTO employees (id, name, country, department, job_title, currency, annual_salary)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-    [e.id, e.name, e.country, e.department, e.jobTitle, e.currency, e.annualSalary],
+    `INSERT INTO employees (id, name, email, country, department, job_title, currency, annual_salary, joined_date)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    [e.id, e.name, e.email, e.country, e.department, e.jobTitle, e.currency, e.annualSalary, e.joinedDate],
   );
 }
 
