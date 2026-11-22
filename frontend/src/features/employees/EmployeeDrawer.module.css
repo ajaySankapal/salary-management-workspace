@@ -122,7 +122,8 @@
 }
 
 .cancel:hover {
-  background: #f3f4f6;
+  background: #f1f5f9;
+  border-color: var(--muted);
 }
 
 .field {
@@ -147,7 +148,7 @@
 .field input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  box-shadow: 0 0 0 3px var(--accent-ring);
 }
 
 .save {
@@ -218,5 +219,5 @@
 }
 
 .error {
-  color: #b00020;
+  color: var(--danger);
 }

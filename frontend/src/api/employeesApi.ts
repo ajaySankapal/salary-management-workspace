@@ -52,6 +52,23 @@ export interface SalaryUpdateInput {
   previousAmount: string;
 }
 
+export type GroupBy = 'country' | 'department' | 'jobTitle';
+
+export interface ReportQuery {
+  groupBy: GroupBy;
+  country?: string;
+  department?: string;
+  jobTitle?: string;
+}
+
+export interface ReportRow {
+  group: string;
+  currency: string;
+  count: number;
+  median: string; // decimal string
+  average: string; // decimal string
+}
+
 function toQueryString(args: EmployeesQuery): string {
   const params = new URLSearchParams();
   params.set('page', String(args.page));
@@ -93,6 +110,18 @@ export const employeesApi = createApi({
         { type: 'Employee', id: 'LIST' },
       ],
     }),
+    getReport: builder.query<ReportRow[], ReportQuery>({
+      query: ({ groupBy, country, department, jobTitle }) => {
+        const params = new URLSearchParams();
+        params.set('groupBy', groupBy);
+        if (country) params.set('country', country);
+        if (department) params.set('department', department);
+        if (jobTitle) params.set('jobTitle', jobTitle);
+        return `reports?${params.toString()}`;
+      },
+      // Reports are built from current salaries, so a salary change refreshes them.
+      providesTags: [{ type: 'Employee', id: 'LIST' }],
+    }),
   }),
 });
 
@@ -101,4 +130,5 @@ export const {
   useGetFilterOptionsQuery,
   useGetEmployeeQuery,
   useUpdateSalaryMutation,
+  useGetReportQuery,
 } = employeesApi;

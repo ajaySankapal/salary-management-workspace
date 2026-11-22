@@ -1,10 +1,78 @@
+/* App shell: fills the viewport so the top bar stays put and only the content
+   area below it scrolls. */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex: none;
+  padding: 0.85rem 1.75rem;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  z-index: 1;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+}
+
+/* Small teal brand mark. */
+.brand::before {
+  content: '';
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 4px;
+  background: var(--accent);
+}
+
+.nav {
+  display: flex;
+  gap: 1.25rem;
+}
+
+.navLink {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.95rem;
+  padding-bottom: 2px;
+}
+
+.navLink:hover {
+  color: var(--text);
+}
+
+.navLinkActive {
+  color: var(--accent);
+  font-weight: 600;
+  border-bottom: 2px solid var(--accent);
+}
+
+/* The one scroll region. It is full width so scrolling anywhere (including the
+   margins beside the content) works; the content itself is centred by pageInner. */
 .page {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.pageInner {
   max-width: 1320px;
   margin: 0 auto;
   padding: 2rem 1rem 3rem;
 }
 
-.page h1 {
+.pageInner h1 {
   margin: 0 0 1.5rem;
   font-size: 1.8rem;
   font-weight: 700;

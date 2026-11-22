@@ -6,8 +6,7 @@
   margin-bottom: 1.25rem;
 }
 
-.toolbar input,
-.toolbar select {
+.toolbar input {
   height: 2.5rem;
   padding: 0 0.75rem;
   font-size: 0.95rem;
@@ -18,21 +17,9 @@
   outline: none;
 }
 
-.toolbar input:focus,
-.toolbar select:focus {
+.toolbar input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-}
-
-/* Custom chevron with a gap from the right edge (native arrow sits in the corner). */
-.toolbar select {
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  padding-right: 2.25rem;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
+  box-shadow: 0 0 0 3px var(--accent-ring);
 }
 
 .search {
@@ -52,7 +39,8 @@
 }
 
 .clearButton:hover:not(:disabled) {
-  background: #f3f4f6;
+  background: #f1f5f9;
+  border-color: var(--muted);
 }
 
 .clearButton:disabled {
@@ -70,8 +58,8 @@
 .card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
   overflow-x: auto;
 }
 
@@ -166,5 +154,5 @@
 }
 
 .error {
-  color: #b00020;
+  color: var(--danger);
 }

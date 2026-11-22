@@ -1,0 +1,133 @@
+.note {
+  margin: 0 0 1.25rem;
+  color: var(--muted);
+}
+
+/* The filter bar stays pinned to the top of the viewport while scrolling. */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--bg);
+  padding: 0.75rem 0;
+  margin-bottom: 0.5rem;
+}
+
+.groupBy {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+.table th {
+  text-align: left;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--head-bg);
+  border-bottom: 1px solid var(--border);
+}
+
+/* The column-header row pins just below the sticky filter bar (~4rem tall). */
+.table thead th {
+  position: sticky;
+  top: 4rem;
+  z-index: 4;
+}
+
+.table td {
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background: var(--row-hover);
+}
+
+/* A labelled banner above each group's per-currency rows. It sticks just below
+   the column-header row while scrolling, so the group is always identifiable;
+   when a group is fully scrolled past, the next group's banner takes its place.
+   top ≈ the height of the sticky column-header row above it. */
+.groupHeaderRow th {
+  position: sticky;
+  /* Sits below the filter bar (~4rem) and the column-header row (~2.3rem),
+     overlapping by ~2px so no data row peeks through the seam. */
+  top: calc(6.3rem - 2px);
+  z-index: 3;
+  text-align: left;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent-hover);
+  background: var(--accent-soft);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* Plain-language explanation of the median and average, shown above the table. */
+.legend {
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.legend p {
+  margin: 0;
+}
+
+.legend p + p {
+  margin-top: 0.4rem;
+}
+
+.legend strong {
+  color: var(--text);
+}
+
+.inWords {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.status {
+  padding: 1.5rem 0;
+  color: var(--muted);
+}
+
+.error {
+  color: var(--danger);
+}
