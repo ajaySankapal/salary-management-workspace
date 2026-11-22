@@ -155,10 +155,66 @@ most often, and shipped those as the Reports presets (and the text interpreter):
 These four are distinct (role / country / department / level) and each is answered
 cleanly by the existing engine and the single report endpoint.
 
-What we left out, on purpose: **absolute cross-country cost** (needs currency
-conversion we chose not to do), **total payroll spend per group** (the report
-returns median/average, not a `sum` — the strongest *next* addition if we extend),
-and **pay trends over time** (history is per employee, reports are point-in-time).
+Since then we also added a **per-group total** (`sum(annual_salary)`, still split
+per currency) and a **sort** so HR can rank the groups by any column. The total was
+originally listed as out of scope, but it was a one-line change to the query and it
+answers "what does this group cost us," so it earned its place.
+
+What we still leave out, on purpose: **absolute cross-country cost** (needs currency
+conversion we chose not to do) and **pay trends over time** (history is per
+employee, reports are point-in-time).
+
+## Reports cache: Redis, with PostgreSQL as the source of truth
+
+The report queries scan the whole `employees` table and compute medians and
+averages per group and currency. That's cheap at 10,000 rows, but the same report
+(e.g. a preset HR opens all day) gets recomputed on every request. So we added an
+**optional** Redis cache in front of the report query. PostgreSQL stays the source
+of truth; Redis is only a shortcut. The logic lives in `reports.cache.ts` and is
+unit-tested with a fake Redis (`reports.cache.test.ts`), so every branch below is
+covered.
+
+**What's cached.** The computed report rows (the JSON array the API returns), with
+a 60-second TTL. Nothing else is cached — not the employee list, not employee
+details.
+
+**The cache key carries a data version.** The key is:
+
+```
+report:<env>:v<version>:<groupBy>:<country>|<department>|<jobTitle>
+```
+
+`<version>` comes from a single-row `report_data_version` counter in PostgreSQL.
+This is why there's a PostgreSQL read *before* Redis: one cheap, indexed, one-row
+`SELECT` tells us which generation of the data we're on. A cache hit then skips the
+expensive part — the full-table aggregation (the `GROUP BY`, `percentile_cont`,
+`avg`, `sum`) — which is the work worth saving.
+
+**How a salary update affects the cache — no deletes needed.** A committed salary
+change (and a seed that actually inserts rows) bumps that version counter **inside
+the same transaction** as the change (`bumpReportVersion`). Because the version is
+part of every key, the next report request builds a *different* key, misses, and
+recomputes from PostgreSQL. The old keys are simply never looked up again and
+expire on their own. We never have to find and delete the right keys — a change
+makes all the stale ones unreachable at once. (If the transaction rolls back, the
+version bump rolls back with it, so the cache is never invalidated for a change
+that didn't happen.)
+
+**A slow request can't poison the cache.** After computing a fresh result we read
+the version again and only write to Redis if it hasn't moved since we started. So
+if a salary update lands *while* a report is being computed, the in-flight request
+won't write its now-stale rows under the current key.
+
+**When Redis is unavailable, reports still work.** If `REDIS_URL` is unset the
+cache is off and reports go straight to PostgreSQL. If Redis is set but the version
+read, the `GET`, or the `SET` fails (down, slow, unreachable), each failure is
+caught and the request falls back to PostgreSQL. The client uses short (1-second)
+connect/command timeouts and no offline queue, so a bad Redis fails fast instead of
+hanging the request. The user still gets a correct report; they just don't get the
+speedup that time.
+
+We have **not** measured the speedup with real numbers, so there are no benchmark
+figures here — just the reasoning above.
 
 ## Tests: real database for schema/seed, fake-free
 
@@ -183,30 +239,31 @@ created once is enough.
 
 ## Possible enhancement: cursor pagination
 
-Right now the employees list uses "offset" pagination — page 1 is the first 25
-rows, page 2 skips 25 and takes the next 25, and so on (`LIMIT 25 OFFSET ...` in
-SQL). This is simple and perfectly fine for our 10,000 rows.
+Right now the employees list uses "offset" pagination — with a page size of 10
+(`PAGE_SIZE` in `employees.repository.ts`), page 1 is the first 10 rows, page 2
+skips 10 and takes the next 10, and so on (`LIMIT 10 OFFSET ...` in SQL). This is
+simple and perfectly fine for our 10,000 rows.
 
 The catch with offset is that the database still has to walk past all the rows
-before the page you asked for. Page 2 skips 25 rows, but the last page skips
+before the page you asked for. Page 2 skips 10 rows, but the last page skips
 almost 10,000 before handing back the final few. So the deeper the page, the more
-work the database does, even though you only get 25 rows back. At our size this
+work the database does, even though you only get 10 rows back. At our size this
 is not noticeable, but on much bigger tables it gets slow, and rows can also
 shift between requests (if someone adds an employee, "page 2" can show a row you
 already saw).
 
 The fix for that is **cursor (a.k.a. keyset) pagination**: instead of "give me
-page 5," the client says "give me the next 25 after this employee" — using the
+page 5," the client says "give me the next 10 after this employee" — using the
 last row we saw as a bookmark (here that would be the last name + id, since
 that's our sort order). The query becomes roughly:
 
 ```
 WHERE (name, id) > (lastName, lastId)
 ORDER BY name, id
-LIMIT 25
+LIMIT 10
 ```
 
-Because the database jumps straight to that spot (using the index) and reads 25
+Because the database jumps straight to that spot (using the index) and reads 10
 rows, it stays fast no matter how deep you go, and it doesn't double-show rows
 when data changes.
 

@@ -48,12 +48,13 @@ previous entry.
 
 ### 3. Answer pay questions (reports)
 HR filters by country, department, and job title, then **groups by one** of them.
-For each group, HR sees the **number of employees, the median, and the average**
-annual base pay, shown **per currency**.
+For each group, HR sees the **number of employees, the median, the average, and
+the total** annual base pay, shown **per currency**. (The total column was added
+after the first draft — see the note under "out of scope" below.)
 
 **It works if:** grouping by department with country set to India gives one row
-per department, each showing a count, a median, and an average in rupees, and the
-counts on all the rows add up to the number of people in the filtered set.
+per department, each showing a count, a median, an average, and a total in rupees,
+and the counts on all the rows add up to the number of people in the filtered set.
 
 ## The questions this should answer
 
@@ -74,8 +75,12 @@ mix one currency into another. We deliberately **don't convert currencies** — 
 wrong exchange rate would distort every comparison.
 
 **Deliberately out of scope for now:** absolute cross-country cost (would need
-conversion), total payroll spend per group (the reports show count / median /
-average, not a sum), and pay trends over time.
+conversion) and pay trends over time.
+
+> **Changed since the first draft:** total payroll spend per group was originally
+> out of scope, but it turned out to be a one-line addition to the report query
+> (`sum(annual_salary)`), so the reports now show a per-group, per-currency total
+> alongside count / median / average. It stays per currency, so nothing is mixed.
 
 ## What we are not building yet, and why
 - **Excel import** — we can prove the whole app with a repeatable set of 10,000

@@ -14,7 +14,7 @@ Everyone signs in first; the app is HR-only.
 
 ## Live demo
 
-- **Live URL:** _(add after deploying — see [docs/deployment.md](docs/deployment.md))_
+- **Live URL:** http://13.201.101.40/ — _temporary demo instance (plain HTTP); may be offline when the server is stopped._
 - **Demo video:** _(add link)_
 - **Demo login:** `hr@salary.demo` / `salary-demo-123`
 
@@ -40,10 +40,17 @@ flowchart LR
   end
 
   DB[("PostgreSQL<br/>employees · salary_history<br/>currencies · users · session")]
+  RD[("Redis<br/>cached salary reports<br/>(optional)")]
 
   B -- "loads the app" --> STAT
   B -- "/api/* (+ session cookie)" --> MW --> LYR --> DB
+  LYR -. "salary reports:<br/>check cache first" .-> RD
 ```
+
+**Reports cache (optional).** Salary reports can be served from Redis to skip the
+full-table aggregation. It's off unless `REDIS_URL` is set, PostgreSQL stays the
+source of truth, and reports keep working if Redis is unreachable. How the cache is
+keyed and invalidated is in [docs/decisions.md](docs/decisions.md).
 
 **One origin.** In production the Express server serves the built React app **and**
 the `/api/*` routes on the same port, so the session cookie is first-party and
