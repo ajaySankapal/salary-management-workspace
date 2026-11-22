@@ -15,7 +15,7 @@ Everyone signs in first; the app is HR-only.
 ## Live demo
 
 - **Live URL:** http://13.201.101.40/ — _temporary demo instance (plain HTTP); may be offline when the server is stopped._
-- **Demo video:** [video name](https://github.com/user-attachments/assets/6eb5fa56-d881-4a57-a1ae-c7bbf2fd48f6)
+- **Demo video:** [salary management workspace demo video](https://github.com/user-attachments/assets/6eb5fa56-d881-4a57-a1ae-c7bbf2fd48f6)
 
 
 - **Demo login:** `hr@salary.demo` / `salary-demo-123`
