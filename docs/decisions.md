@@ -131,11 +131,11 @@ machinery we don't need yet.
 > e.g. an invite/registration code, an allow-list of emails, or "only an existing
 > signed-in HR user can add new users" (and likely add roles at that point).
 
-Two more MVP simplifications to revisit for production: the session store is
-`express-session`'s default **in-memory** store (fine for one process, but
-sessions vanish on restart and don't work across multiple instances — swap for a
-persistent store like `connect-pg-simple`), and the session cookie is only marked
-`secure` in production, assuming HTTPS there.
+On sessions: in **production** they are stored in PostgreSQL (`connect-pg-simple`,
+table auto-created), so they survive restarts and work across instances; in
+dev/test the default **in-memory** store is used to keep tests dependency-free.
+The session cookie is marked `secure` only in production (assuming HTTPS, with
+`trust proxy` set for a TLS-terminating proxy). See `docs/deployment.md`.
 
 ## Tests: real database for schema/seed, fake-free
 
