@@ -16,7 +16,16 @@ Everyone signs in first; the app is HR-only.
 
 - **Live URL:** http://13.201.101.40/ — _temporary demo instance (plain HTTP); may be offline when the server is stopped._
 - **Demo video:** _(add link)_
-- **Demo login:** `hr@salary.demo` / `salary-demo-123`
+
+**Demo login** — email and password (use the copy button on each):
+
+```text
+hr@salary.demo
+```
+
+```text
+salary-demo-123
+```
 
 ## Tech stack
 
