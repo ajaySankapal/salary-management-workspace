@@ -7,39 +7,50 @@ const options = {
 };
 
 describe('interpretQuestion — supported patterns', () => {
-  it('typical pay for a role in a country → filter by both, group by job title', () => {
+  it('typical pay for a role in a country → group by job title, no sort', () => {
     expect(interpretQuestion('What is the typical salary for software engineers in India?', options)).toEqual({
-      country: 'India',
-      department: '',
-      jobTitle: 'Software Engineer',
-      groupBy: 'jobTitle',
+      filters: { country: 'India', department: '', jobTitle: 'Software Engineer', groupBy: 'jobTitle' },
     });
   });
 
-  it('pay by department in a country → filter by country, group by department', () => {
+  it('pay by department in a country → filter country, group by department', () => {
     expect(interpretQuestion('How does pay vary by department in India?', options)).toEqual({
-      country: 'India',
-      department: '',
-      jobTitle: '',
-      groupBy: 'department',
+      filters: { country: 'India', department: '', jobTitle: '', groupBy: 'department' },
     });
   });
 
-  it('a role across countries → filter by role, group by country', () => {
+  it('a role across countries → filter role, group by country', () => {
     expect(interpretQuestion('How do Software Engineer salaries compare across countries?', options)).toEqual({
-      country: '',
-      department: '',
-      jobTitle: 'Software Engineer',
-      groupBy: 'country',
+      filters: { country: '', department: '', jobTitle: 'Software Engineer', groupBy: 'country' },
     });
   });
 
-  it('levels within a department → filter by department, group by job title', () => {
+  it('levels within a department → group by job title', () => {
     expect(interpretQuestion('How does pay vary by job title in Engineering?', options)).toEqual({
-      country: '',
-      department: 'Engineering',
-      jobTitle: '',
-      groupBy: 'jobTitle',
+      filters: { country: '', department: 'Engineering', jobTitle: '', groupBy: 'jobTitle' },
+    });
+  });
+});
+
+describe('interpretQuestion — rankings (highest / lowest)', () => {
+  it('"highest paid department" → group by department, sort by median desc', () => {
+    expect(interpretQuestion('Give me the highest paid department', options)).toEqual({
+      filters: { country: '', department: '', jobTitle: '', groupBy: 'department' },
+      sort: { key: 'median', dir: 'desc' },
+    });
+  });
+
+  it('"which country pays the lowest" → group by country, sort by median asc', () => {
+    expect(interpretQuestion('Which country pays the lowest?', options)).toEqual({
+      filters: { country: '', department: '', jobTitle: '', groupBy: 'country' },
+      sort: { key: 'median', dir: 'asc' },
+    });
+  });
+
+  it('"department with the highest total spend" → sort by total desc', () => {
+    expect(interpretQuestion('department with the highest total spend', options)).toEqual({
+      filters: { country: '', department: '', jobTitle: '', groupBy: 'department' },
+      sort: { key: 'total', dir: 'desc' },
     });
   });
 });

@@ -160,8 +160,72 @@
 
 .tableActions {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
   margin-bottom: 0.5rem;
+}
+
+/* "Sorted by …" indicator shown to HR when a ranking is active. */
+.sortNote {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.sortClear {
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* Clickable column headers for sorting. */
+.sortBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sortBtn:hover {
+  color: var(--text);
+}
+
+.sortActive {
+  color: var(--accent-hover);
+}
+
+/* ↕ hint that a column can be sorted; solid arrow when it's the active sort.
+   Inherits the header's font size and centers on the same line as the label. */
+.sortIcon,
+.sortIconActive {
+  display: inline-flex;
+  align-items: center;
+  font-size: inherit;
+  line-height: 1;
+}
+
+.sortIcon {
+  color: var(--muted);
+}
+
+.sortIconActive {
+  color: var(--accent-hover);
 }
 
 .exportButton {
@@ -256,7 +320,8 @@
   /* A soft light tint — a step below the more-defined column header above, and a
      step above the white rows; the accent bar + bold label mark the section. */
   background: #faf7f1;
-  border-top: 1px solid var(--head-border);
+  /* No border-top: the column header already has a bottom border, so a top border
+     here would show as a double hairline right under it. */
   border-bottom: 1px solid var(--border);
   box-shadow: inset 3px 0 0 var(--accent);
 }

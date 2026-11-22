@@ -156,6 +156,30 @@ describe('ReportsPage', () => {
     expect((screen.getByLabelText('Country') as HTMLSelectElement).value).toBe('');
   });
 
+  it('sorts by a column when its header is clicked, with a clear indicator', async () => {
+    renderReports();
+    await screen.findByText('15,00,000 INR'); // table has rendered
+
+    fireEvent.click(screen.getByRole('button', { name: /^Median/i }));
+    expect(screen.getByText(/highest first/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /^Median/i })); // flip direction
+    expect(screen.getByText(/lowest first/i)).toBeInTheDocument();
+  });
+
+  it('interprets "highest paid department" into a department ranking', async () => {
+    renderReports();
+    await screen.findByRole('option', { name: 'India' });
+
+    fireEvent.change(screen.getByLabelText(/describe a report/i), {
+      target: { value: 'Give me the highest paid department' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Interpret' }));
+
+    expect((screen.getByLabelText('Group by') as HTMLSelectElement).value).toBe('department');
+    expect(screen.getByText(/interpreted as/i)).toHaveTextContent(/sorted by Median/i);
+  });
+
   it('deselects the preset and clears the filters when clicked again', async () => {
     renderReports();
     await screen.findByRole('option', { name: 'India' });

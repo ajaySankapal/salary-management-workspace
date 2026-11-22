@@ -2,7 +2,7 @@ import { Fragment, useState, type FormEvent } from 'react';
 import { useGetFilterOptionsQuery, useGetReportQuery, type GroupBy, type ReportRow } from '../../api/employeesApi';
 import { formatSalary } from '../employees/formatSalary';
 import { salaryToWords } from '../employees/salaryToWords';
-import { interpretQuestion, type Filters } from './interpretQuestion';
+import { interpretQuestion, type Filters, type Sort, type SortKey } from './interpretQuestion';
 import { toReportCsv } from './reportCsv';
 import styles from './ReportsPage.module.css';
 
@@ -11,6 +11,22 @@ const GROUP_LABELS: Record<GroupBy, string> = {
   department: 'Department',
   jobTitle: 'Job title',
 };
+
+const SORT_LABELS: Record<SortKey, string> = {
+  count: 'Employees',
+  median: 'Median',
+  average: 'Average',
+  total: 'Total',
+};
+
+// A single number to rank a group by. For median/average we take the group's
+// highest across its currencies; count/total are summed. (Comparisons are per
+// currency — amounts are never converted.)
+function groupSortValue(rows: ReportRow[], key: SortKey): number {
+  if (key === 'count') return rows.reduce((sum, r) => sum + r.count, 0);
+  if (key === 'total') return rows.reduce((sum, r) => sum + Number(r.total), 0);
+  return Math.max(...rows.map((r) => Number(r[key])));
+}
 
 // All the report's controls, kept in one object so applying a preset, clearing,
 // and comparing are each a single step. (The Filters shape is shared with the
@@ -93,15 +109,22 @@ export default function ReportsPage() {
   const [interpretation, setInterpretation] = useState('');
   const [askError, setAskError] = useState('');
 
-  // Translate the typed question into the same filters the form uses. On success
-  // we fill the filters (so HR can see and change them) and show how we read it;
-  // otherwise we ask HR to refine or use the filters.
+  // How the groups are ranked, if the user asked (e.g. "highest paid department").
+  const [sort, setSort] = useState<Sort | null>(null);
+
+  // Translate the typed question into the same filters the form uses (and a sort if
+  // it asked for a ranking). On success we fill the controls and show how we read
+  // it; otherwise we ask HR to refine or use the filters.
   function onInterpret(event: FormEvent) {
     event.preventDefault();
     const parsed = interpretQuestion(question, options);
     if (parsed) {
-      setFilters(parsed);
-      setInterpretation(describeFilters(parsed));
+      setFilters(parsed.filters);
+      setSort(parsed.sort ?? null);
+      const sortText = parsed.sort
+        ? ` · sorted by ${SORT_LABELS[parsed.sort.key]} (${parsed.sort.dir === 'desc' ? 'highest first' : 'lowest first'})`
+        : '';
+      setInterpretation(describeFilters(parsed.filters) + sortText);
       setAskError('');
     } else {
       setInterpretation('');
@@ -110,6 +133,24 @@ export default function ReportsPage() {
       );
     }
   }
+
+  // Click a column header to sort by it: first click highest-first, again
+  // lowest-first, a third click clears the sort.
+  function toggleSort(key: SortKey) {
+    setSort((cur) => (!cur || cur.key !== key ? { key, dir: 'desc' } : cur.dir === 'desc' ? { key, dir: 'asc' } : null));
+  }
+
+  const sortBtnClass = (key: SortKey) =>
+    sort?.key === key ? `${styles.sortBtn} ${styles.sortActive}` : styles.sortBtn;
+  // Faint ↕ shows a column is sortable; it becomes a solid ▼/▲ when it's the active sort.
+  const sortIcon = (key: SortKey) => {
+    const active = sort?.key === key;
+    return (
+      <span className={active ? styles.sortIconActive : styles.sortIcon} aria-hidden="true">
+        {active ? (sort?.dir === 'desc' ? '▼' : '▲') : '↕'}
+      </span>
+    );
+  };
 
   // Download the rows currently shown as a CSV file (for sharing with Finance etc.).
   function handleExportCsv() {
@@ -135,6 +176,16 @@ export default function ReportsPage() {
       (!p.filters.department || (options?.departments ?? []).includes(p.filters.department)) &&
       (!p.filters.jobTitle || (options?.jobTitles ?? []).includes(p.filters.jobTitle)),
   );
+
+  // Group the rows, then (if a sort is active) order the groups by the chosen measure.
+  const groups = data ? groupRows(data) : [];
+  const orderedGroups = sort
+    ? [...groups].sort((a, b) => {
+        const av = groupSortValue(a.rows, sort.key);
+        const bv = groupSortValue(b.rows, sort.key);
+        return sort.dir === 'desc' ? bv - av : av - bv;
+      })
+    : groups;
 
   return (
     <section>
@@ -179,7 +230,10 @@ export default function ReportsPage() {
               type="button"
               aria-pressed={isActive}
               className={isActive ? `${styles.preset} ${styles.presetActive}` : styles.preset}
-              onClick={() => setFilters(isActive ? EMPTY_FILTERS : preset.filters)}
+              onClick={() => {
+                setFilters(isActive ? EMPTY_FILTERS : preset.filters);
+                setSort(null);
+              }}
             >
               {preset.label}
               {isActive && (
@@ -237,6 +291,16 @@ export default function ReportsPage() {
       {!isLoading && !isError && data && data.length > 0 && (
         <>
         <div className={styles.tableActions}>
+          <div className={styles.sortNote}>
+            {sort && (
+              <>
+                Sorted by {SORT_LABELS[sort.key]} — {sort.dir === 'desc' ? 'highest first' : 'lowest first'}
+                <button type="button" className={styles.sortClear} onClick={() => setSort(null)}>
+                  Clear
+                </button>
+              </>
+            )}
+          </div>
           <button type="button" className={styles.exportButton} onClick={handleExportCsv}>
             Export CSV
           </button>
@@ -246,14 +310,30 @@ export default function ReportsPage() {
             <thead>
               <tr>
                 <th>Currency</th>
-                <th>Employees</th>
-                <th>Median (annual base pay)</th>
-                <th>Average (annual base pay)</th>
-                <th>Total (annual base pay)</th>
+                <th>
+                  <button type="button" className={sortBtnClass('count')} onClick={() => toggleSort('count')} title="Sort by employees">
+                    Employees {sortIcon('count')}
+                  </button>
+                </th>
+                <th>
+                  <button type="button" className={sortBtnClass('median')} onClick={() => toggleSort('median')} title="Sort by median">
+                    Median (annual base pay) {sortIcon('median')}
+                  </button>
+                </th>
+                <th>
+                  <button type="button" className={sortBtnClass('average')} onClick={() => toggleSort('average')} title="Sort by average">
+                    Average (annual base pay) {sortIcon('average')}
+                  </button>
+                </th>
+                <th>
+                  <button type="button" className={sortBtnClass('total')} onClick={() => toggleSort('total')} title="Sort by total">
+                    Total (annual base pay) {sortIcon('total')}
+                  </button>
+                </th>
               </tr>
             </thead>
             <tbody>
-              {groupRows(data).map((groupData) => (
+              {orderedGroups.map((groupData) => (
                 <Fragment key={groupData.group}>
                   <tr className={styles.groupHeaderRow}>
                     <th colSpan={5} scope="colgroup">
