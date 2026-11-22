@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import request from 'supertest';
+import { signedInAgent } from './helpers/auth';
 import { Pool } from 'pg';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
@@ -12,6 +12,7 @@ const APP_DATABASE_URL = process.env.DATABASE_URL;
 
 let pool: Pool;
 let app: Express;
+let agent: Awaited<ReturnType<typeof signedInAgent>>;
 
 async function currentSalary(): Promise<string> {
   const r = await pool.query('SELECT annual_salary FROM employees WHERE id = $1', ['EMP-UPD']);
@@ -30,7 +31,7 @@ beforeAll(async () => {
   process.env.DATABASE_URL = TEST_DATABASE_URL;
 
   pool = new Pool({ connectionString: TEST_DATABASE_URL });
-  await pool.query('DROP TABLE IF EXISTS salary_history, employees, currencies, pgmigrations CASCADE');
+  await pool.query('DROP TABLE IF EXISTS salary_history, employees, currencies, users, pgmigrations CASCADE');
   execFileSync('npm', ['run', 'migrate', '--', '-d', 'TEST_DATABASE_URL'], {
     cwd: join(__dirname, '..', '..'),
     env: process.env,
@@ -39,6 +40,7 @@ beforeAll(async () => {
   await pool.query(`INSERT INTO currencies (code, name) VALUES ('INR', 'Indian Rupee')`);
 
   app = createApp();
+  agent = await signedInAgent(app, pool);
 });
 
 // Fresh employee (salary 1,000,000, no history) before each test.
@@ -59,7 +61,7 @@ afterAll(async () => {
 
 describe('POST /api/employees/:id/salary', () => {
   it('rejects an invalid amount without changing salary or history', async () => {
-    const res = await request(app)
+    const res = await agent
       .post('/api/employees/EMP-UPD/salary')
       .send({ amount: '0', reason: 'Annual raise', previousAmount: '1000000.00' });
 
@@ -69,7 +71,7 @@ describe('POST /api/employees/:id/salary', () => {
   });
 
   it('rejects a blank reason without changing salary or history', async () => {
-    const res = await request(app)
+    const res = await agent
       .post('/api/employees/EMP-UPD/salary')
       .send({ amount: '1200000', reason: '   ', previousAmount: '1000000.00' });
 
@@ -79,7 +81,7 @@ describe('POST /api/employees/:id/salary', () => {
   });
 
   it('applies a valid update and records exactly one history entry', async () => {
-    const res = await request(app)
+    const res = await agent
       .post('/api/employees/EMP-UPD/salary')
       .send({ amount: '1200000', reason: 'Annual raise', previousAmount: '1000000.00' });
 
@@ -100,7 +102,7 @@ describe('POST /api/employees/:id/salary', () => {
   });
 
   it('rejects a stale edit (older version) without changing salary or history', async () => {
-    const res = await request(app)
+    const res = await agent
       .post('/api/employees/EMP-UPD/salary')
       .send({ amount: '1300000', reason: 'Annual raise', previousAmount: '900000.00' }); // wrong previous
 

@@ -1,6 +1,18 @@
 import type { Pool } from 'pg';
+import bcrypt from 'bcryptjs';
 import { CURRENCIES } from '../data/currencies';
+import { DEMO_HR_ACCOUNT } from '../auth/demoAccount';
 import { generateEmployees } from './employees';
+
+// The pre-created HR login. Idempotent: ON CONFLICT DO NOTHING keeps an existing
+// account (and its password) untouched on a re-run.
+export async function seedDemoUser(pool: Pool): Promise<void> {
+  const passwordHash = await bcrypt.hash(DEMO_HR_ACCOUNT.password, 10);
+  await pool.query(
+    'INSERT INTO users (username, password_hash) VALUES ($1, $2) ON CONFLICT (username) DO NOTHING',
+    [DEMO_HR_ACCOUNT.username, passwordHash],
+  );
+}
 
 // Reference data: the valid currencies. Idempotent.
 export async function seedCurrencies(pool: Pool): Promise<void> {
@@ -41,6 +53,7 @@ export async function seedEmployees(pool: Pool): Promise<number> {
 
 export async function seedAll(pool: Pool): Promise<void> {
   await seedCurrencies(pool);
+  await seedDemoUser(pool);
   const count = await seedEmployees(pool);
-  console.log(`Seeded currencies and ${count} employees.`);
+  console.log(`Seeded currencies, the demo HR user, and ${count} employees.`);
 }
