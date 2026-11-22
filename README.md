@@ -3,8 +3,8 @@
 An HR tool for keeping salary data honest and answering pay questions about an
 organization of ~10,000 employees across several countries. HR can:
 
-- **Browse employees** — search by name or ID and filter by country, department,
-  and job title (paginated on the server).
+- **Browse employees** — search by name or ID, filter by country, department, and
+  job title, and sort by any column (paginated on the server).
 - **Record salary changes** — set a new amount with a reason, and see the full
   change history for each person.
 - **Run pay reports** — count, median, and average annual base pay, grouped by

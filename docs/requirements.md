@@ -29,7 +29,9 @@ own currency is honest, and it is exactly what the cross-country question needs 
 ### 1. Find an employee
 HR searches by name or employee ID and filters by country, department, and job
 title. The search and filters run over the **whole dataset first**, and only then
-the results are split into pages by the server.
+the results are split into pages by the server. HR can also **sort** the list by
+any column (name, current salary, joined date, and so on); sorting also runs over
+the whole dataset, so it covers every page, not just the one on screen.
 
 **It works if:** HR filters to India and Engineering and sees only India
 Engineering people, a total count for that filtered set, and one page of them.

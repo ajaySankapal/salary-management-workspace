@@ -237,6 +237,23 @@ created once is enough.
 - Setup order on a fresh machine: create the databases → `npm run migrate` →
   `npm run seed`.
 
+## Sorting the employee list
+
+HR can sort the employee list by clicking a column header (name, current salary,
+joined date, country, job title, employee id). The sort is done **in SQL**, not in
+the browser, so it orders the whole filtered set and covers every page — not just
+the 10 rows on screen. A few guardrails:
+
+- The sort column comes from a small **whitelist** (a column name can't be a bound
+  SQL parameter), and the direction is sanitised to `ASC`/`DESC`, so there's no way
+  to inject arbitrary SQL through the `sort`/`dir` query params.
+- `id` is always the **final tiebreaker** (`ORDER BY <column> <dir>, id`), so paging
+  stays stable even when the sort column has duplicate values (e.g. many people on
+  the same salary) — without it, rows could repeat or go missing across pages.
+- The chosen sort lives in the **URL** (`?sort=salary&dir=desc`), like the filters,
+  so it survives a refresh and is shareable. An unknown column falls back to the
+  default (name).
+
 ## Possible enhancement: cursor pagination
 
 Right now the employees list uses "offset" pagination — with a page size of 10
