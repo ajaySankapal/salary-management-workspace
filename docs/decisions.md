@@ -112,6 +112,31 @@ currency. We do **not** convert between currencies — a wrong exchange rate wou
 quietly distort every report, and showing each result in its own currency is
 honest and is exactly what the "same role in different countries" question needs.
 
+## Sign-in: database users, sessions, and open registration
+
+HR signs in before using the app. Accounts live in a `users` table (passwords
+stored only as a **bcrypt hash**, never plain text), and there's a pre-created
+demo account seeded by `npm run seed` so a fresh clone can log in right away
+(`hr@salary.demo` / `salary-demo-123`, overridable via env). Signing in starts a
+**session** (`express-session`, cookie signed with `SESSION_SECRET` from the
+environment); the employee, salary, and report APIs reject anyone without one.
+
+There are **no roles** — the whole app is HR-facing, so every account (demo or
+self-registered) is an HR user with the same access. Keeping it role-free avoids
+machinery we don't need yet.
+
+> ⚠️ **Flag: registration is open.** Anyone who can reach the app can register
+> an account and then see everyone's salaries. That's acceptable for this demo/MVP
+> but is **not safe for real salary data**. Before any real use, lock this down —
+> e.g. an invite/registration code, an allow-list of emails, or "only an existing
+> signed-in HR user can add new users" (and likely add roles at that point).
+
+Two more MVP simplifications to revisit for production: the session store is
+`express-session`'s default **in-memory** store (fine for one process, but
+sessions vanish on restart and don't work across multiple instances — swap for a
+persistent store like `connect-pg-simple`), and the session cookie is only marked
+`secure` in production, assuming HTTPS there.
+
 ## Tests: real database for schema/seed, fake-free
 
 For the schema and seed we run **integration tests against a real, throwaway

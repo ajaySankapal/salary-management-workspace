@@ -1,0 +1,125 @@
+.screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 1rem;
+  background: var(--bg);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  width: 100%;
+  max-width: 360px;
+  padding: 2rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-md);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.mark {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 4px;
+  background: var(--accent);
+}
+
+.title {
+  margin: 0.25rem 0 0.25rem;
+  font-size: 1.4rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+}
+
+.field span {
+  color: var(--muted);
+}
+
+.field input {
+  height: 2.5rem;
+  padding: 0 0.75rem;
+  font-size: 0.95rem;
+  color: var(--text);
+  background: var(--card);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  outline: none;
+}
+
+.field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.submit {
+  margin-top: 0.4rem;
+  height: 2.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.submit:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.submit:disabled {
+  background: var(--border-strong);
+  cursor: not-allowed;
+}
+
+.error {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  color: #991b1b;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.hint {
+  margin: -0.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.switch {
+  margin: 0.25rem 0 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.switchButton {
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.switchButton:hover {
+  text-decoration: underline;
+}

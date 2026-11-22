@@ -69,6 +69,15 @@ export interface ReportRow {
   average: string; // decimal string
 }
 
+export interface AuthUser {
+  username: string;
+}
+
+export interface Credentials {
+  username: string;
+  password: string;
+}
+
 function toQueryString(args: EmployeesQuery): string {
   const params = new URLSearchParams();
   params.set('page', String(args.page));
@@ -81,9 +90,52 @@ function toQueryString(args: EmployeesQuery): string {
 
 export const employeesApi = createApi({
   reducerPath: 'employeesApi',
-  baseQuery: fetchBaseQuery({ baseUrl: '/api' }),
-  tagTypes: ['Employee'],
+  // credentials: 'include' sends the session cookie so protected APIs accept us.
+  baseQuery: fetchBaseQuery({ baseUrl: '/api', credentials: 'include' }),
+  tagTypes: ['Employee', 'Me'],
   endpoints: (builder) => ({
+    // Who is signed in; errors (401) when nobody is.
+    getMe: builder.query<AuthUser, void>({
+      query: () => 'auth/me',
+      providesTags: ['Me'],
+    }),
+    login: builder.mutation<AuthUser, Credentials>({
+      query: (credentials) => ({ url: 'auth/login', method: 'POST', body: credentials }),
+      // Put the signed-in user straight into the getMe cache. (Tag invalidation
+      // wouldn't refetch getMe here, because a 401 leaves it in an error state.)
+      async onQueryStarted(_credentials, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          dispatch(employeesApi.util.upsertQueryData('getMe', undefined, data));
+        } catch {
+          // Wrong credentials — handled in the sign-in form.
+        }
+      },
+    }),
+    register: builder.mutation<AuthUser, Credentials>({
+      query: (credentials) => ({ url: 'auth/register', method: 'POST', body: credentials }),
+      // Registering also signs you in, so cache the new user like login does.
+      async onQueryStarted(_credentials, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          dispatch(employeesApi.util.upsertQueryData('getMe', undefined, data));
+        } catch {
+          // Validation / duplicate username — handled in the form.
+        }
+      },
+    }),
+    logout: builder.mutation<void, void>({
+      query: () => ({ url: 'auth/logout', method: 'POST' }),
+      // Clear all cached data so the next person starts clean; getMe then 401s.
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(employeesApi.util.resetApiState());
+        } catch {
+          // ignore
+        }
+      },
+    }),
     getEmployees: builder.query<EmployeesPage, EmployeesQuery>({
       query: (args) => `employees?${toQueryString(args)}`,
       providesTags: (result) =>
@@ -126,6 +178,10 @@ export const employeesApi = createApi({
 });
 
 export const {
+  useGetMeQuery,
+  useLoginMutation,
+  useRegisterMutation,
+  useLogoutMutation,
   useGetEmployeesQuery,
   useGetFilterOptionsQuery,
   useGetEmployeeQuery,

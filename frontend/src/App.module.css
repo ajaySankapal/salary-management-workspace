@@ -78,3 +78,37 @@
   font-weight: 700;
   letter-spacing: -0.01em;
 }
+
+/* Signed-in account + sign-out, pushed to the right of the top bar. */
+.account {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+.accountName {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.signOut {
+  padding: 0.4rem 0.85rem;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--text);
+  background: var(--card);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.signOut:hover {
+  border-color: var(--accent);
+  color: var(--accent-hover);
+}
+
+.loading {
+  padding: 2rem;
+  color: var(--muted);
+}
