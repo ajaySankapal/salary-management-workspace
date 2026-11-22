@@ -1,6 +1,9 @@
+/* Above the app header (z-index 1) and the sticky pager (z-index 2) so the drawer
+   sits on top of everything. */
 .overlay {
   position: fixed;
   inset: 0;
+  z-index: 100;
   background: rgba(0, 0, 0, 0.35);
 }
 
@@ -8,6 +11,7 @@
   position: fixed;
   top: 0;
   right: 0;
+  z-index: 101;
   height: 100%;
   width: 40%;
   min-width: 360px;
@@ -18,20 +22,34 @@
   overflow-y: auto;
 }
 
+/* A clear, round close (×) button in the top-right corner of the drawer. */
 .close {
   position: absolute;
-  top: 0.75rem;
+  top: 0.9rem;
   right: 0.9rem;
-  background: none;
-  border: none;
-  font-size: 1.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  font-size: 1.5rem;
   line-height: 1;
   color: var(--muted);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 50%;
   cursor: pointer;
 }
 
 .close:hover {
   color: var(--text);
+  background: #f1f5f9;
+  border-color: var(--border-strong);
+}
+
+.close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 .title {

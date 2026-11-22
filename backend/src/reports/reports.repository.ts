@@ -21,6 +21,7 @@ export interface ReportRow {
   count: number;
   median: string; // decimal string
   average: string; // decimal string
+  total: string; // decimal string — sum of annual base pay in the group
 }
 
 function buildWhere(filters: ReportFilters): { where: string; params: unknown[] } {
@@ -54,7 +55,8 @@ export async function getReport(filters: ReportFilters, groupBy: GroupBy): Promi
     `SELECT ${column} AS "group", currency,
             count(*)::int AS count,
             round(percentile_cont(0.5) WITHIN GROUP (ORDER BY annual_salary)::numeric, 2) AS median,
-            round(avg(annual_salary), 2) AS average
+            round(avg(annual_salary), 2) AS average,
+            round(sum(annual_salary), 2) AS total
      FROM employees
      ${where}
      GROUP BY ${column}, currency

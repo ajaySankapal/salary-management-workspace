@@ -56,13 +56,26 @@ per department, each showing a count, a median, and an average in rupees, and th
 counts on all the rows add up to the number of people in the filtered set.
 
 ## The questions this should answer
-- What is the typical salary for software engineers in India?
-- How does pay vary by department in India?
-- What does the same role look like across different countries, each in its own
-  currency?
 
-Because the numbers are always worked out per currency, these answers never
-quietly mix one currency into another.
+Prioritized by the decisions HR makes most often. Each is a one-click example on
+the Reports screen (and can also be typed into "Describe a report").
+
+1. **What do we pay a role in a country?** — the number behind most offers and
+   raises. (e.g. *typical pay for software engineers in India*.)
+2. **How does the same role compare across countries?** — for deciding where to
+   hire. Shown **each in its own currency**, so it's a local-market comparison, not
+   a converted "who earns more."
+3. **How does pay vary by department in a country?** — pay structure and fairness.
+4. **How do levels compare within a function?** — pay by job title inside one
+   department.
+
+Because the numbers are always worked out per currency, these answers never quietly
+mix one currency into another. We deliberately **don't convert currencies** — a
+wrong exchange rate would distort every comparison.
+
+**Deliberately out of scope for now:** absolute cross-country cost (would need
+conversion), total payroll spend per group (the reports show count / median /
+average, not a sum), and pay trends over time.
 
 ## What we are not building yet, and why
 - **Excel import** — we can prove the whole app with a repeatable set of 10,000

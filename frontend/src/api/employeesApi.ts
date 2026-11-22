@@ -67,6 +67,7 @@ export interface ReportRow {
   count: number;
   median: string; // decimal string
   average: string; // decimal string
+  total: string; // decimal string — sum of annual base pay in the group
 }
 
 export interface AuthUser {

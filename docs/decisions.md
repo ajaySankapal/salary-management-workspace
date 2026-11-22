@@ -137,6 +137,29 @@ dev/test the default **in-memory** store is used to keep tests dependency-free.
 The session cookie is marked `secure` only in production (assuming HTTPS, with
 `trust proxy` set for a TLS-terminating proxy). See `docs/deployment.md`.
 
+## Reports: which questions we prioritized, and why
+
+The report engine is deliberately small — count, median, and average per currency,
+grouped by one of country / department / job title. So the product decision is
+*which questions to make easy*. We prioritized by the decisions an HR manager makes
+most often, and shipped those as the Reports presets (and the text interpreter):
+
+1. **Role pay in a country** — drives almost every offer and raise; highest value.
+2. **The same role across countries** — hiring-location decisions. Framed honestly
+   as a **local-currency** comparison, because we don't convert (see the currencies
+   note): a wrong rate would distort every number, and the local rate is what a
+   local offer needs anyway.
+3. **Pay by department in a country** — structure and fairness in one market.
+4. **Levels within a function** — pay by job title inside one department.
+
+These four are distinct (role / country / department / level) and each is answered
+cleanly by the existing engine and the single report endpoint.
+
+What we left out, on purpose: **absolute cross-country cost** (needs currency
+conversion we chose not to do), **total payroll spend per group** (the report
+returns median/average, not a `sum` — the strongest *next* addition if we extend),
+and **pay trends over time** (history is per employee, reports are point-in-time).
+
 ## Tests: real database for schema/seed, fake-free
 
 For the schema and seed we run **integration tests against a real, throwaway

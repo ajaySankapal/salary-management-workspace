@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useGetEmployeesQuery, useGetFilterOptionsQuery } from '../../api/employeesApi';
 import { formatSalary, formatJoinedDate } from './formatSalary';
+import { salaryToWords } from './salaryToWords';
 import EmployeeDrawer from './EmployeeDrawer';
 import styles from './EmployeesPage.module.css';
 
@@ -124,25 +125,28 @@ export default function EmployeesPage() {
                     <td>{employee.email}</td>
                     <td>{employee.country}</td>
                     <td>{employee.jobTitle}</td>
-                    <td className={styles.num}>{formatSalary(employee.salary, employee.currency)}</td>
+                    <td className={styles.num}>
+                      {formatSalary(employee.salary, employee.currency)}
+                      <span className={styles.inWords}>({salaryToWords(employee.salary, employee.currency)})</span>
+                    </td>
                     <td>{formatJoinedDate(employee.joinedDate)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-
-            <nav className={styles.pager} aria-label="Pagination">
-              <span className={styles.pageInfo}>
-                Page {data.page} of {totalPages}
-              </span>
-              <button type="button" onClick={() => goToPage(page - 1)} disabled={page <= 1}>
-                Previous
-              </button>
-              <button type="button" onClick={() => goToPage(page + 1)} disabled={page >= totalPages}>
-                Next
-              </button>
-            </nav>
           </div>
+
+          <nav className={styles.pager} aria-label="Pagination">
+            <span className={styles.pageInfo}>
+              Page {data.page} of {totalPages}
+            </span>
+            <button type="button" onClick={() => goToPage(page - 1)} disabled={page <= 1}>
+              Previous
+            </button>
+            <button type="button" onClick={() => goToPage(page + 1)} disabled={page >= totalPages}>
+              Next
+            </button>
+          </nav>
         </>
       )}
 

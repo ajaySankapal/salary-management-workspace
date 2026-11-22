@@ -10,11 +10,13 @@ const filterOptions = {
 };
 
 const allRows = [
-  { group: 'India', currency: 'INR', count: 2, median: '1500000.00', average: '1600000.00' },
-  { group: 'United States', currency: 'USD', count: 1, median: '120000.00', average: '130000.00' },
+  { group: 'India', currency: 'INR', count: 2, median: '1500000.00', average: '1600000.00', total: '3200000.00' },
+  { group: 'United States', currency: 'USD', count: 1, median: '120000.00', average: '130000.00', total: '130000.00' },
 ];
 
-const indiaRows = [{ group: 'India', currency: 'INR', count: 2, median: '1500000.00', average: '1600000.00' }];
+const indiaRows = [
+  { group: 'India', currency: 'INR', count: 2, median: '1500000.00', average: '1600000.00', total: '3200000.00' },
+];
 
 function urlOf(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input;
@@ -67,6 +69,27 @@ describe('ReportsPage', () => {
     expect(calledUrls.some((u: string) => u.includes('/reports') && u.includes('country=India'))).toBe(true);
   });
 
+  it('shows the total (sum) column for each group', async () => {
+    renderReports();
+    expect(await screen.findByText('Total (annual base pay)')).toBeInTheDocument();
+    // India total: 3,200,000 → "32,00,000 INR" in the Indian grouping.
+    expect(screen.getByText('32,00,000 INR')).toBeInTheDocument();
+  });
+
+  it('exports the current report as a CSV download', async () => {
+    const createObjectURL = jest.fn(() => 'blob:mock');
+    (URL as unknown as { createObjectURL: unknown }).createObjectURL = createObjectURL;
+    (URL as unknown as { revokeObjectURL: unknown }).revokeObjectURL = jest.fn();
+    const clickSpy = jest.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+
+    renderReports();
+    fireEvent.click(await screen.findByRole('button', { name: /export csv/i }));
+
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+    clickSpy.mockRestore();
+  });
+
   it('fills the filters when the India software-engineer preset is clicked', async () => {
     renderReports();
 
@@ -91,6 +114,46 @@ describe('ReportsPage', () => {
         ),
       ).toBe(true);
     });
+  });
+
+  it('interprets a supported "Describe a report" question into the filters', async () => {
+    renderReports();
+    await screen.findByRole('option', { name: 'India' });
+
+    fireEvent.change(screen.getByLabelText(/describe a report/i), {
+      target: { value: 'What is the typical salary for software engineers in India?' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Interpret' }));
+
+    // Filters are filled (and remain editable) and the interpretation is shown.
+    expect((screen.getByLabelText('Country') as HTMLSelectElement).value).toBe('India');
+    expect((screen.getByLabelText('Job title') as HTMLSelectElement).value).toBe('Software Engineer');
+    expect((screen.getByLabelText('Group by') as HTMLSelectElement).value).toBe('jobTitle');
+    expect(screen.getByText(/interpreted as/i)).toHaveTextContent(/grouped by Job title/i);
+
+    // The same single report endpoint is called with the translated filters.
+    await waitFor(() => {
+      const urls = (global.fetch as jest.Mock).mock.calls.map((c) => urlOf(c[0]));
+      expect(
+        urls.some(
+          (u: string) =>
+            u.includes('/reports') && u.includes('country=India') && u.includes('jobTitle=Software+Engineer'),
+        ),
+      ).toBe(true);
+    });
+  });
+
+  it('explains when a "Describe a report" question is not understood, leaving filters unchanged', async () => {
+    renderReports();
+    await screen.findByRole('option', { name: 'India' });
+
+    fireEvent.change(screen.getByLabelText(/describe a report/i), {
+      target: { value: 'what is the weather today?' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Interpret' }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/match that to a report/i);
+    expect((screen.getByLabelText('Country') as HTMLSelectElement).value).toBe('');
   });
 
   it('deselects the preset and clears the filters when clicked again', async () => {

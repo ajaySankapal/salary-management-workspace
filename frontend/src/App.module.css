@@ -6,14 +6,16 @@
   height: 100vh;
 }
 
+/* Clean, light top bar. */
 .header {
   display: flex;
   align-items: center;
   gap: 2rem;
   flex: none;
   padding: 0.85rem 1.75rem;
-  background: var(--card);
-  border-bottom: 1px solid var(--border);
+  background: var(--header-bg);
+  color: var(--header-fg);
+  border-bottom: 1px solid var(--header-border);
   box-shadow: var(--shadow-sm);
   z-index: 1;
 }
@@ -22,18 +24,19 @@
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
+  color: var(--header-fg);
   font-weight: 700;
   font-size: 1.05rem;
   letter-spacing: -0.01em;
 }
 
-/* Small teal brand mark. */
+/* Brand mark (light blue so it reads on the navy bar). */
 .brand::before {
   content: '';
   width: 0.75rem;
   height: 0.75rem;
   border-radius: 4px;
-  background: var(--accent);
+  background: var(--header-accent);
 }
 
 .nav {
@@ -42,20 +45,20 @@
 }
 
 .navLink {
-  color: var(--muted);
+  color: var(--header-muted);
   text-decoration: none;
   font-size: 0.95rem;
   padding-bottom: 2px;
 }
 
 .navLink:hover {
-  color: var(--text);
+  color: var(--header-fg);
 }
 
 .navLinkActive {
-  color: var(--accent);
+  color: var(--header-accent);
   font-weight: 600;
-  border-bottom: 2px solid var(--accent);
+  border-bottom: 2px solid var(--header-accent);
 }
 
 /* The one scroll region. It is full width so scrolling anywhere (including the
@@ -88,7 +91,7 @@
 }
 
 .accountName {
-  color: var(--muted);
+  color: var(--header-muted);
   font-size: 0.9rem;
 }
 

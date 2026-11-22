@@ -71,7 +71,8 @@ describe('GET /api/reports', () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual([
-      { group: 'India', currency: 'INR', count: 3, median: '200.00', average: '200.00' },
+      // total is the sum of the group's salaries: 100 + 200 + 300 = 600.
+      { group: 'India', currency: 'INR', count: 3, median: '200.00', average: '200.00', total: '600.00' },
     ]);
   });
 

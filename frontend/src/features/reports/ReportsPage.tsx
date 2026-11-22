@@ -1,7 +1,9 @@
-import { Fragment, useState } from 'react';
+import { Fragment, useState, type FormEvent } from 'react';
 import { useGetFilterOptionsQuery, useGetReportQuery, type GroupBy, type ReportRow } from '../../api/employeesApi';
 import { formatSalary } from '../employees/formatSalary';
 import { salaryToWords } from '../employees/salaryToWords';
+import { interpretQuestion, type Filters } from './interpretQuestion';
+import { toReportCsv } from './reportCsv';
 import styles from './ReportsPage.module.css';
 
 const GROUP_LABELS: Record<GroupBy, string> = {
@@ -11,15 +13,18 @@ const GROUP_LABELS: Record<GroupBy, string> = {
 };
 
 // All the report's controls, kept in one object so applying a preset, clearing,
-// and comparing are each a single step.
-interface Filters {
-  country: string;
-  department: string;
-  jobTitle: string;
-  groupBy: GroupBy;
-}
-
+// and comparing are each a single step. (The Filters shape is shared with the
+// text interpreter in interpretQuestion.ts.)
 const EMPTY_FILTERS: Filters = { country: '', department: '', jobTitle: '', groupBy: 'country' };
+
+// A short, human description of what a set of filters will show.
+function describeFilters(f: Filters): string {
+  const parts = [`grouped by ${GROUP_LABELS[f.groupBy]}`];
+  if (f.country) parts.push(`Country: ${f.country}`);
+  if (f.department) parts.push(`Department: ${f.department}`);
+  if (f.jobTitle) parts.push(`Job title: ${f.jobTitle}`);
+  return parts.join(' · ');
+}
 
 function sameFilters(a: Filters, b: Filters): boolean {
   return (
@@ -34,18 +39,28 @@ interface Preset {
   filters: Filters;
 }
 
+// Ordered by how often HR needs them (see docs/requirements.md).
 const PRESETS: Preset[] = [
+  // 1. Role benchmark in a country — the number behind most offers and raises.
   {
     label: 'Typical pay for software engineers in India',
     filters: { country: 'India', department: '', jobTitle: 'Software Engineer', groupBy: 'jobTitle' },
   },
+  // 2. Same role across countries, each in its own currency — a local-market
+  //    comparison for hiring-location decisions (amounts are never converted).
   {
-    label: 'How pay varies by department in India',
+    label: 'Software Engineer pay across countries (local currency)',
+    filters: { country: '', department: '', jobTitle: 'Software Engineer', groupBy: 'country' },
+  },
+  // 3. Pay structure by department within a country.
+  {
+    label: 'Pay by department in India',
     filters: { country: 'India', department: '', jobTitle: '', groupBy: 'department' },
   },
+  // 4. Leveling within a function — pay by job title inside one department.
   {
-    label: 'Software Engineer across countries',
-    filters: { country: '', department: '', jobTitle: 'Software Engineer', groupBy: 'country' },
+    label: 'Pay by job title in Engineering (India)',
+    filters: { country: 'India', department: 'Engineering', jobTitle: '', groupBy: 'jobTitle' },
   },
 ];
 
@@ -74,6 +89,40 @@ export default function ReportsPage() {
   });
   const { data: options } = useGetFilterOptionsQuery();
 
+  const [question, setQuestion] = useState('');
+  const [interpretation, setInterpretation] = useState('');
+  const [askError, setAskError] = useState('');
+
+  // Translate the typed question into the same filters the form uses. On success
+  // we fill the filters (so HR can see and change them) and show how we read it;
+  // otherwise we ask HR to refine or use the filters.
+  function onInterpret(event: FormEvent) {
+    event.preventDefault();
+    const parsed = interpretQuestion(question, options);
+    if (parsed) {
+      setFilters(parsed);
+      setInterpretation(describeFilters(parsed));
+      setAskError('');
+    } else {
+      setInterpretation('');
+      setAskError(
+        'I couldn’t match that to a report. Try rephrasing — for example “How does pay vary by department in India?” — or set the filters below.',
+      );
+    }
+  }
+
+  // Download the rows currently shown as a CSV file (for sharing with Finance etc.).
+  function handleExportCsv() {
+    if (!data || data.length === 0) return;
+    const csv = toReportCsv(data, GROUP_LABELS[groupBy]);
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `salary-report-by-${groupBy}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   // The preset (if any) whose values match the current filters, so editing any
   // dropdown afterwards turns its pill off on its own.
   const activePreset = PRESETS.find((p) => sameFilters(p.filters, filters));
@@ -90,7 +139,34 @@ export default function ReportsPage() {
   return (
     <section>
       <h1>Salary Reports</h1>
-      <p className={styles.note}>Count, median, and average of annual base pay — shown per currency.</p>
+      <form className={styles.ask} onSubmit={onInterpret}>
+        <label className={styles.askLabel} htmlFor="describe-report">
+          Describe a report <span className={styles.askOptional}>(optional)</span>
+        </label>
+        <div className={styles.askRow}>
+          <input
+            id="describe-report"
+            type="text"
+            className={styles.askInput}
+            placeholder="e.g. How does pay vary by department in India?"
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+          />
+          <button type="submit" className={styles.askButton} disabled={!question.trim()}>
+            Interpret
+          </button>
+        </div>
+        {interpretation && (
+          <p role="status" className={styles.askResult}>
+            Interpreted as: {interpretation}. Adjust the filters below if needed.
+          </p>
+        )}
+        {askError && (
+          <p role="alert" className={styles.askError}>
+            {askError}
+          </p>
+        )}
+      </form>
 
       {usablePresets.length > 0 && (
       <div className={styles.presets}>
@@ -146,18 +222,6 @@ export default function ReportsPage() {
         </label>
       </div>
 
-      <div className={styles.legend}>
-        <p>
-          <strong>Median</strong> — the middle salary: line everyone up from lowest to highest pay and this is
-          the person in the middle. Half earn more, half earn less. A few very high or very low salaries do not
-          pull it up or down.
-        </p>
-        <p>
-          <strong>Average</strong> — everyone’s pay added together and divided by the number of employees.
-          Unlike the median, a few very high or very low salaries can pull it up or down.
-        </p>
-      </div>
-
       {isLoading && <p className={styles.status}>Loading report…</p>}
 
       {!isLoading && isError && (
@@ -171,6 +235,12 @@ export default function ReportsPage() {
       )}
 
       {!isLoading && !isError && data && data.length > 0 && (
+        <>
+        <div className={styles.tableActions}>
+          <button type="button" className={styles.exportButton} onClick={handleExportCsv}>
+            Export CSV
+          </button>
+        </div>
         <div className={styles.card}>
           <table className={styles.table}>
             <thead>
@@ -179,13 +249,14 @@ export default function ReportsPage() {
                 <th>Employees</th>
                 <th>Median (annual base pay)</th>
                 <th>Average (annual base pay)</th>
+                <th>Total (annual base pay)</th>
               </tr>
             </thead>
             <tbody>
               {groupRows(data).map((groupData) => (
                 <Fragment key={groupData.group}>
                   <tr className={styles.groupHeaderRow}>
-                    <th colSpan={4} scope="colgroup">
+                    <th colSpan={5} scope="colgroup">
                       {GROUP_LABELS[groupBy]}: {groupData.group}
                     </th>
                   </tr>
@@ -201,6 +272,10 @@ export default function ReportsPage() {
                         {formatSalary(row.average, row.currency)}
                         <span className={styles.inWords}>{salaryToWords(row.average, row.currency)}</span>
                       </td>
+                      <td>
+                        {formatSalary(row.total, row.currency)}
+                        <span className={styles.inWords}>{salaryToWords(row.total, row.currency)}</span>
+                      </td>
                     </tr>
                   ))}
                 </Fragment>
@@ -208,6 +283,7 @@ export default function ReportsPage() {
             </tbody>
           </table>
         </div>
+        </>
       )}
     </section>
   );

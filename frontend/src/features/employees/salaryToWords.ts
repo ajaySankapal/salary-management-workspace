@@ -33,21 +33,21 @@ function internationalWords(n: number): string {
   return parts.join(' ');
 }
 
-// Indian grouping (thousand, then lakh and crore in groups of two),
+// Indian grouping: crore (1,00,00,000), lakh (1,00,000), thousand, then hundreds.
+// crore can be any size (e.g. "four hundred sixty-two crore"), so it uses the
+// general converter; lakh and thousand are always 0–99.
 // e.g. 1700000 -> "seventeen lakh".
 function indianWords(n: number): string {
-  const lastThree = n % 1000;
-  let rest = Math.floor(n / 1000);
-  const scales = [' thousand', ' lakh', ' crore'];
+  const crore = Math.floor(n / 10000000);
+  const lakh = Math.floor((n % 10000000) / 100000);
+  const thousand = Math.floor((n % 100000) / 1000);
+  const hundreds = n % 1000;
+
   const parts: string[] = [];
-  let scale = 0;
-  while (rest > 0) {
-    const group = rest % 100;
-    if (group) parts.unshift(underHundred(group) + scales[scale]);
-    rest = Math.floor(rest / 100);
-    scale += 1;
-  }
-  if (lastThree) parts.push(underThousand(lastThree));
+  if (crore) parts.push(`${internationalWords(crore)} crore`);
+  if (lakh) parts.push(`${underHundred(lakh)} lakh`);
+  if (thousand) parts.push(`${underHundred(thousand)} thousand`);
+  if (hundreds) parts.push(underThousand(hundreds));
   return parts.join(' ');
 }
 

@@ -1,9 +1,15 @@
+/* The search + filters stay pinned at the top while scrolling the list. */
 .toolbar {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
   align-items: center;
-  margin-bottom: 1.25rem;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--bg);
+  padding: 0.75rem 0;
+  margin-bottom: 0.5rem;
 }
 
 .toolbar input {
@@ -60,14 +66,23 @@
   border: 1px solid var(--border);
   border-radius: 14px;
   box-shadow: var(--shadow-sm);
-  overflow-x: auto;
 }
 
 .table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 0.92rem;
   white-space: nowrap;
+}
+
+/* Round the header's top corners so the tinted band follows the card's radius. */
+.table thead th:first-child {
+  border-top-left-radius: 13px;
+}
+
+.table thead th:last-child {
+  border-top-right-radius: 13px;
 }
 
 .table th {
@@ -80,6 +95,15 @@
   color: var(--muted);
   background: var(--head-bg);
   border-bottom: 1px solid var(--border);
+}
+
+/* Keep the column headers visible while scrolling, pinned just below the sticky
+   filters toolbar (~4rem tall). The header band has its own tone + border. */
+.table thead th {
+  position: sticky;
+  top: 4rem;
+  z-index: 2;
+  border-bottom: 1px solid var(--head-border);
 }
 
 .table td {
@@ -100,6 +124,16 @@
   font-variant-numeric: tabular-nums;
 }
 
+.inWords {
+  display: block;
+  max-width: 14rem;
+  margin-top: 0.15rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .nameButton {
   padding: 0;
   background: none;
@@ -114,14 +148,22 @@
   text-decoration: underline;
 }
 
+/* Pinned to the bottom of the viewport so pagination is always reachable without
+   scrolling to the end of a tall page. */
 .pager {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 1rem;
-  padding: 0.85rem 1rem;
-  border-top: 1px solid var(--border);
-  background: var(--head-bg);
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
 }
 
 .pageInfo {

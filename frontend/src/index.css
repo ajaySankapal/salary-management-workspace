@@ -1,28 +1,37 @@
 :root {
-  /* Neutrals (cool slate) */
-  --bg: #f6f8f9;
+  /* Neutrals — warm and soft, easy on the eyes */
+  --bg: #f8f7f4;
   --card: #ffffff;
-  --text: #0f172a;
-  --muted: #64748b;
-  --border: #e6eaef;
-  --border-strong: #cdd5df;
+  --text: #33302c;
+  --muted: #78736b;
+  --border: #eae7e1;
+  --border-strong: #d9d5cd;
 
-  /* Teal / emerald accent */
-  --accent: #0d9488;
-  --accent-hover: #0f766e;
-  --accent-soft: #f0fdfa;
-  --accent-ring: rgba(13, 148, 136, 0.18);
+  /* Monochrome accent: a warm near-black for primary actions and selected states.
+     Minimal and neutral — no competing brand color. */
+  --accent: #3a3732;
+  --accent-hover: #211e1a;
+  --accent-soft: #f1efea;
+  --accent-ring: rgba(58, 55, 50, 0.18);
+
+  /* Top bar — light and clean (mirrors the warm neutrals above) */
+  --header-bg: #ffffff;
+  --header-fg: #33302c;
+  --header-muted: #78736b;
+  --header-accent: #3a3732;
+  --header-border: #eae7e1;
 
   /* Table surfaces */
-  --row-hover: #f5fbfa;
-  --head-bg: #f8fafc;
+  --row-hover: #faf9f6;
+  --head-bg: #f0ebe2;
+  --head-border: #ddd6c8;
 
   /* Status */
   --danger: #dc2626;
 
-  /* Elevation */
-  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
-  --shadow-md: 0 6px 20px rgba(16, 24, 40, 0.08);
+  /* Elevation — gentle */
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.03), 0 1px 3px rgba(16, 24, 40, 0.05);
+  --shadow-md: 0 8px 24px rgba(16, 24, 40, 0.08);
 
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   line-height: 1.5;

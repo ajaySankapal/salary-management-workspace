@@ -3,6 +3,80 @@
   color: var(--muted);
 }
 
+/* Optional free-text "Describe a report" input. */
+.ask {
+  margin-bottom: 1rem;
+}
+
+.askLabel {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.askOptional {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.askRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.askInput {
+  flex: 1 1 320px;
+  min-width: 240px;
+  height: 2.5rem;
+  padding: 0 0.75rem;
+  font-size: 0.95rem;
+  color: var(--text);
+  background: var(--card);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  outline: none;
+}
+
+.askInput:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.askButton {
+  height: 2.5rem;
+  padding: 0 1.1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.askButton:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.askButton:disabled {
+  background: var(--border-strong);
+  cursor: not-allowed;
+}
+
+.askResult {
+  margin: 0.5rem 0 0;
+  font-size: 0.88rem;
+  color: var(--accent-hover);
+}
+
+.askError {
+  margin: 0.5rem 0 0;
+  font-size: 0.88rem;
+  color: var(--danger);
+}
+
 /* Clickable example questions that pre-fill the filters below. */
 .presets {
   display: flex;
@@ -84,6 +158,28 @@
   font-size: 0.95rem;
 }
 
+.tableActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+}
+
+.exportButton {
+  padding: 0.4rem 0.85rem;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--text);
+  background: var(--card);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.exportButton:hover {
+  border-color: var(--accent);
+  color: var(--accent-hover);
+}
+
 .card {
   background: var(--card);
   border: 1px solid var(--border);
@@ -93,9 +189,19 @@
 
 .table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 0.92rem;
   white-space: nowrap;
+}
+
+/* Round the header's top corners so the tinted band follows the card's radius. */
+.table thead th:first-child {
+  border-top-left-radius: 13px;
+}
+
+.table thead th:last-child {
+  border-top-right-radius: 13px;
 }
 
 .table th {
@@ -110,11 +216,13 @@
   border-bottom: 1px solid var(--border);
 }
 
-/* The column-header row pins just below the sticky filter bar (~4rem tall). */
+/* The column-header row pins just below the sticky filter bar (~4rem tall).
+   The header band has its own tone + border. */
 .table thead th {
   position: sticky;
   top: 4rem;
   z-index: 4;
+  border-bottom: 1px solid var(--head-border);
 }
 
 .table td {
@@ -144,42 +252,25 @@
   padding: 0.6rem 0.9rem;
   font-size: 0.85rem;
   font-weight: 700;
-  color: var(--accent-hover);
-  background: var(--accent-soft);
-  border-top: 1px solid var(--border);
+  color: var(--text);
+  /* A soft light tint — a step below the more-defined column header above, and a
+     step above the white rows; the accent bar + bold label mark the section. */
+  background: #faf7f1;
+  border-top: 1px solid var(--head-border);
   border-bottom: 1px solid var(--border);
   box-shadow: inset 3px 0 0 var(--accent);
 }
 
-/* Plain-language explanation of the median and average, shown above the table. */
-.legend {
-  margin: 0 0 1rem;
-  padding: 0.75rem 0.9rem;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  font-size: 0.88rem;
-  line-height: 1.45;
-  color: var(--muted);
-}
-
-.legend p {
-  margin: 0;
-}
-
-.legend p + p {
-  margin-top: 0.4rem;
-}
-
-.legend strong {
-  color: var(--text);
-}
-
 .inWords {
   display: block;
+  max-width: 16rem;
   margin-top: 0.15rem;
   font-size: 0.82rem;
   color: var(--muted);
+  /* The table is nowrap for numbers; let the long in-words text wrap instead of
+     overflowing the column. */
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .status {
