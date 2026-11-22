@@ -66,4 +66,45 @@ describe('ReportsPage', () => {
     const calledUrls = (global.fetch as jest.Mock).mock.calls.map((c) => urlOf(c[0]));
     expect(calledUrls.some((u: string) => u.includes('/reports') && u.includes('country=India'))).toBe(true);
   });
+
+  it('fills the filters when the India software-engineer preset is clicked', async () => {
+    renderReports();
+
+    // Wait for the filter options so the selects can hold the preset values.
+    await screen.findByRole('option', { name: 'India' });
+
+    const preset = screen.getByRole('button', { name: /software engineers in India/i });
+    fireEvent.click(preset);
+
+    expect((screen.getByLabelText('Country') as HTMLSelectElement).value).toBe('India');
+    expect((screen.getByLabelText('Job title') as HTMLSelectElement).value).toBe('Software Engineer');
+    // The pill shows as active once applied.
+    expect(preset).toHaveAttribute('aria-pressed', 'true');
+
+    // Both filters are sent to the existing report endpoint.
+    await waitFor(() => {
+      const calledUrls = (global.fetch as jest.Mock).mock.calls.map((c) => urlOf(c[0]));
+      expect(
+        calledUrls.some(
+          (u: string) =>
+            u.includes('/reports') && u.includes('country=India') && u.includes('jobTitle=Software+Engineer'),
+        ),
+      ).toBe(true);
+    });
+  });
+
+  it('deselects the preset and clears the filters when clicked again', async () => {
+    renderReports();
+    await screen.findByRole('option', { name: 'India' });
+
+    const preset = screen.getByRole('button', { name: /software engineers in India/i });
+    fireEvent.click(preset);
+    expect(preset).toHaveAttribute('aria-pressed', 'true');
+
+    // Clicking the active pill turns it off and clears the filters it set.
+    fireEvent.click(preset);
+    expect(preset).toHaveAttribute('aria-pressed', 'false');
+    expect((screen.getByLabelText('Country') as HTMLSelectElement).value).toBe('');
+    expect((screen.getByLabelText('Job title') as HTMLSelectElement).value).toBe('');
+  });
 });

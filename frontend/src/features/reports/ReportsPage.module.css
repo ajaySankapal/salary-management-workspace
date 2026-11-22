@@ -3,6 +3,65 @@
   color: var(--muted);
 }
 
+/* Clickable example questions that pre-fill the filters below. */
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.presetsLabel {
+  margin-right: 0.15rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* Unselected: plain neutral outline pill. */
+.preset {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.85rem;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--text);
+  background: var(--card);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.preset:hover {
+  border-color: var(--accent);
+  color: var(--accent-hover);
+}
+
+.preset:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Selected: light teal tint with a teal outline and a clear (×) affordance. */
+.presetActive {
+  color: var(--accent-hover);
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.presetActive:hover {
+  color: var(--accent-hover);
+  background: var(--accent-soft);
+  border-color: var(--accent-hover);
+}
+
+.presetClear {
+  font-size: 1.05rem;
+  line-height: 1;
+  opacity: 0.9;
+}
+
 /* The filter bar stays pinned to the top of the viewport while scrolling. */
 .toolbar {
   display: flex;

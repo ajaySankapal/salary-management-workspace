@@ -10,6 +10,45 @@ const GROUP_LABELS: Record<GroupBy, string> = {
   jobTitle: 'Job title',
 };
 
+// All the report's controls, kept in one object so applying a preset, clearing,
+// and comparing are each a single step.
+interface Filters {
+  country: string;
+  department: string;
+  jobTitle: string;
+  groupBy: GroupBy;
+}
+
+const EMPTY_FILTERS: Filters = { country: '', department: '', jobTitle: '', groupBy: 'country' };
+
+function sameFilters(a: Filters, b: Filters): boolean {
+  return (
+    a.country === b.country && a.department === b.department && a.jobTitle === b.jobTitle && a.groupBy === b.groupBy
+  );
+}
+
+// Ready-made questions from docs/requirements.md. Clicking one fills the filters
+// below with these values; HR can then tweak any dropdown.
+interface Preset {
+  label: string;
+  filters: Filters;
+}
+
+const PRESETS: Preset[] = [
+  {
+    label: 'Typical pay for software engineers in India',
+    filters: { country: 'India', department: '', jobTitle: 'Software Engineer', groupBy: 'jobTitle' },
+  },
+  {
+    label: 'How pay varies by department in India',
+    filters: { country: 'India', department: '', jobTitle: '', groupBy: 'department' },
+  },
+  {
+    label: 'Software Engineer across countries',
+    filters: { country: '', department: '', jobTitle: 'Software Engineer', groupBy: 'country' },
+  },
+];
+
 
 // Collapses the flat, per-currency rows (already sorted by group) into one entry
 // per group, so the group name can be shown once across its currency rows.
@@ -24,10 +63,8 @@ function groupRows(rows: ReportRow[]): Array<{ group: string; rows: ReportRow[] 
 }
 
 export default function ReportsPage() {
-  const [groupBy, setGroupBy] = useState<GroupBy>('country');
-  const [country, setCountry] = useState('');
-  const [department, setDepartment] = useState('');
-  const [jobTitle, setJobTitle] = useState('');
+  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
+  const { country, department, jobTitle, groupBy } = filters;
 
   const { data, isLoading, isError } = useGetReportQuery({
     groupBy,
@@ -37,25 +74,63 @@ export default function ReportsPage() {
   });
   const { data: options } = useGetFilterOptionsQuery();
 
+  // The preset (if any) whose values match the current filters, so editing any
+  // dropdown afterwards turns its pill off on its own.
+  const activePreset = PRESETS.find((p) => sameFilters(p.filters, filters));
+
+  // Only show a preset when the values it relies on exist in the data, so it can
+  // never quietly apply a filter with no matching option.
+  const usablePresets = PRESETS.filter(
+    (p) =>
+      (!p.filters.country || (options?.countries ?? []).includes(p.filters.country)) &&
+      (!p.filters.department || (options?.departments ?? []).includes(p.filters.department)) &&
+      (!p.filters.jobTitle || (options?.jobTitles ?? []).includes(p.filters.jobTitle)),
+  );
+
   return (
     <section>
       <h1>Salary Reports</h1>
       <p className={styles.note}>Count, median, and average of annual base pay — shown per currency.</p>
 
+      {usablePresets.length > 0 && (
+      <div className={styles.presets}>
+        <span className={styles.presetsLabel}>Common questions</span>
+        {usablePresets.map((preset) => {
+          const isActive = activePreset?.label === preset.label;
+          return (
+            <button
+              key={preset.label}
+              type="button"
+              aria-pressed={isActive}
+              className={isActive ? `${styles.preset} ${styles.presetActive}` : styles.preset}
+              onClick={() => setFilters(isActive ? EMPTY_FILTERS : preset.filters)}
+            >
+              {preset.label}
+              {isActive && (
+                <span className={styles.presetClear} aria-hidden="true">
+                  ×
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+      )}
+
       <div className={styles.toolbar}>
-        <select aria-label="Country" value={country} onChange={(e) => setCountry(e.target.value)}>
+        <select aria-label="Country" value={country} onChange={(e) => setFilters({ ...filters, country: e.target.value })}>
           <option value="">All countries</option>
           {(options?.countries ?? []).map((c) => (
             <option key={c} value={c}>{c}</option>
           ))}
         </select>
-        <select aria-label="Department" value={department} onChange={(e) => setDepartment(e.target.value)}>
+        <select aria-label="Department" value={department} onChange={(e) => setFilters({ ...filters, department: e.target.value })}>
           <option value="">All departments</option>
           {(options?.departments ?? []).map((d) => (
             <option key={d} value={d}>{d}</option>
           ))}
         </select>
-        <select aria-label="Job title" value={jobTitle} onChange={(e) => setJobTitle(e.target.value)}>
+        <select aria-label="Job title" value={jobTitle} onChange={(e) => setFilters({ ...filters, jobTitle: e.target.value })}>
           <option value="">All job titles</option>
           {(options?.jobTitles ?? []).map((j) => (
             <option key={j} value={j}>{j}</option>
@@ -63,7 +138,7 @@ export default function ReportsPage() {
         </select>
         <label className={styles.groupBy}>
           Group by
-          <select aria-label="Group by" value={groupBy} onChange={(e) => setGroupBy(e.target.value as GroupBy)}>
+          <select aria-label="Group by" value={groupBy} onChange={(e) => setFilters({ ...filters, groupBy: e.target.value as GroupBy })}>
             <option value="country">Country</option>
             <option value="department">Department</option>
             <option value="jobTitle">Job title</option>
