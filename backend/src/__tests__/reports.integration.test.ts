@@ -38,7 +38,7 @@ beforeAll(async () => {
   process.env.DATABASE_URL = TEST_DATABASE_URL;
 
   pool = new Pool({ connectionString: TEST_DATABASE_URL });
-  await pool.query('DROP TABLE IF EXISTS salary_history, employees, currencies, users, pgmigrations CASCADE');
+  await pool.query('DROP TABLE IF EXISTS salary_history, employees, currencies, users, report_data_version, pgmigrations CASCADE');
   execFileSync('npm', ['run', 'migrate', '--', '-d', 'TEST_DATABASE_URL'], {
     cwd: join(__dirname, '..', '..'),
     env: process.env,

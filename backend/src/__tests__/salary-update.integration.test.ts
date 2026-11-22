@@ -24,6 +24,11 @@ async function historyCount(): Promise<number> {
   return r.rows[0].c;
 }
 
+async function reportVersion(): Promise<number> {
+  const r = await pool.query('SELECT version FROM report_data_version WHERE id = true');
+  return Number(r.rows[0].version);
+}
+
 beforeAll(async () => {
   if (!TEST_DATABASE_URL || TEST_DATABASE_URL === APP_DATABASE_URL) {
     throw new Error('Set TEST_DATABASE_URL to a disposable database, different from DATABASE_URL.');
@@ -31,7 +36,7 @@ beforeAll(async () => {
   process.env.DATABASE_URL = TEST_DATABASE_URL;
 
   pool = new Pool({ connectionString: TEST_DATABASE_URL });
-  await pool.query('DROP TABLE IF EXISTS salary_history, employees, currencies, users, pgmigrations CASCADE');
+  await pool.query('DROP TABLE IF EXISTS salary_history, employees, currencies, users, report_data_version, pgmigrations CASCADE');
   execFileSync('npm', ['run', 'migrate', '--', '-d', 'TEST_DATABASE_URL'], {
     cwd: join(__dirname, '..', '..'),
     env: process.env,
@@ -109,5 +114,48 @@ describe('POST /api/employees/:id/salary', () => {
     expect(res.status).toBe(409);
     expect(await currentSalary()).toBe('1000000.00');
     expect(await historyCount()).toBe(0);
+  });
+});
+
+describe('report-data version and report freshness', () => {
+  it('advances the report version on a committed salary update', async () => {
+    const before = await reportVersion();
+
+    const res = await agent
+      .post('/api/employees/EMP-UPD/salary')
+      .send({ amount: '1500000', reason: 'Annual raise', previousAmount: '1000000.00' });
+
+    expect(res.status).toBe(200);
+    expect(await reportVersion()).toBe(before + 1);
+  });
+
+  it('leaves the report version unchanged when an update is rejected', async () => {
+    const before = await reportVersion();
+
+    // Invalid amount -> 400 (rejected before the transaction).
+    await agent
+      .post('/api/employees/EMP-UPD/salary')
+      .send({ amount: '0', reason: 'Annual raise', previousAmount: '1000000.00' });
+    // Stale edit -> 409 (transaction runs but writes nothing).
+    await agent
+      .post('/api/employees/EMP-UPD/salary')
+      .send({ amount: '1500000', reason: 'Annual raise', previousAmount: '900000.00' });
+
+    expect(await reportVersion()).toBe(before);
+  });
+
+  it('a report after a committed update shows the new figure with the same employee count', async () => {
+    const before = await agent.get('/api/reports').query({ groupBy: 'country' });
+    const india0 = before.body.find((r: { group: string }) => r.group === 'India');
+    expect(india0).toMatchObject({ count: 1, median: '1000000.00' });
+
+    const upd = await agent
+      .post('/api/employees/EMP-UPD/salary')
+      .send({ amount: '1500000', reason: 'Annual raise', previousAmount: '1000000.00' });
+    expect(upd.status).toBe(200);
+
+    const after = await agent.get('/api/reports').query({ groupBy: 'country' });
+    const india1 = after.body.find((r: { group: string }) => r.group === 'India');
+    expect(india1).toMatchObject({ count: 1, median: '1500000.00' }); // figure updated, count unchanged
   });
 });

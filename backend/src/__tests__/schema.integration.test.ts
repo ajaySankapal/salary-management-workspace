@@ -45,6 +45,10 @@ beforeAll(async () => {
   });
 
   pool = new Pool({ connectionString: TEST_DATABASE_URL });
+  // Start from clean data so this suite is independent of run order (another suite
+  // may have left rows). salary_history first, to satisfy the foreign key.
+  await pool.query('DELETE FROM salary_history');
+  await pool.query('DELETE FROM employees');
   for (const { code, name } of CURRENCIES) {
     await pool.query('INSERT INTO currencies (code, name) VALUES ($1, $2) ON CONFLICT DO NOTHING', [code, name]);
   }

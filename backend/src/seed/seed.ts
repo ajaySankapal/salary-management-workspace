@@ -2,6 +2,7 @@ import type { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
 import { CURRENCIES } from '../data/currencies';
 import { DEMO_HR_ACCOUNT } from '../auth/demoAccount';
+import { bumpReportVersion } from '../reports/reportVersion';
 import { generateEmployees } from './employees';
 
 // The pre-created HR login. Idempotent: ON CONFLICT DO NOTHING keeps an existing
@@ -29,26 +30,43 @@ export async function seedCurrencies(pool: Pool): Promise<void> {
 export async function seedEmployees(pool: Pool): Promise<number> {
   const employees = generateEmployees();
 
-  await pool.query(
-    `INSERT INTO employees (id, name, email, country, department, job_title, currency, annual_salary, joined_date)
-     SELECT * FROM unnest(
-       $1::text[], $2::text[], $3::text[], $4::text[], $5::text[], $6::text[], $7::text[], $8::numeric[], $9::date[]
-     )
-     ON CONFLICT (id) DO NOTHING`,
-    [
-      employees.map((e) => e.id),
-      employees.map((e) => e.name),
-      employees.map((e) => e.email),
-      employees.map((e) => e.country),
-      employees.map((e) => e.department),
-      employees.map((e) => e.jobTitle),
-      employees.map((e) => e.currency),
-      employees.map((e) => e.annualSalary),
-      employees.map((e) => e.joinedDate),
-    ],
-  );
+  // Insert and (only if rows were actually added) bump the report version in the
+  // same transaction. A rerun that adds nothing leaves the version unchanged.
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await client.query(
+      `INSERT INTO employees (id, name, email, country, department, job_title, currency, annual_salary, joined_date)
+       SELECT * FROM unnest(
+         $1::text[], $2::text[], $3::text[], $4::text[], $5::text[], $6::text[], $7::text[], $8::numeric[], $9::date[]
+       )
+       ON CONFLICT (id) DO NOTHING`,
+      [
+        employees.map((e) => e.id),
+        employees.map((e) => e.name),
+        employees.map((e) => e.email),
+        employees.map((e) => e.country),
+        employees.map((e) => e.department),
+        employees.map((e) => e.jobTitle),
+        employees.map((e) => e.currency),
+        employees.map((e) => e.annualSalary),
+        employees.map((e) => e.joinedDate),
+      ],
+    );
 
-  return employees.length;
+    const inserted = result.rowCount ?? 0;
+    if (inserted > 0) {
+      await bumpReportVersion(client);
+    }
+
+    await client.query('COMMIT');
+    return inserted;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 export async function seedAll(pool: Pool): Promise<void> {

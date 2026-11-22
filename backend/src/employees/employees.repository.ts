@@ -1,4 +1,5 @@
 import { query, withTransaction } from '../db/pool';
+import { bumpReportVersion } from '../reports/reportVersion';
 
 const PAGE_SIZE = 10;
 
@@ -150,6 +151,10 @@ export async function updateSalary(id: string, input: SalaryUpdate): Promise<Sal
        VALUES ($1, $2, $3, $4)`,
       [id, dbAmount, input.amount, input.reason],
     );
+
+    // Reports depend on current salaries — bump the version in this same
+    // transaction so a rollback (or an early not_found/stale return) leaves it.
+    await bumpReportVersion(client);
 
     const updated = await client.query<Employee>(`SELECT ${EMPLOYEE_COLUMNS} FROM employees WHERE id = $1`, [id]);
     return { ok: true, employee: updated.rows[0] };

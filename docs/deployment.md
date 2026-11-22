@@ -28,6 +28,7 @@ for local use; in a real deploy, set them in the platform's config).
 | `NODE_ENV`         | yes (prod) | `production`                                    | Turns on the Postgres session store, static frontend serving, the `secure` cookie, and `trust proxy`. |
 | `PORT`             | no       | `4000`                                            | Port the server listens on (default `4000`). |
 | `COOKIE_SECURE`    | no       | `false`                                           | Overrides the HTTPS-only session cookie. Set `false` only to try the production build locally over plain `http://localhost`; leave unset in a real HTTPS deploy. |
+| `REDIS_URL`        | no (set in demo) | `redis://host:6379`                       | Enables the Redis cache for salary reports. **Set this in the deployed demo.** Leave unset to serve reports straight from PostgreSQL. PostgreSQL stays the source of truth; reports keep working if Redis is unset, unreachable, or times out. |
 | `DEMO_HR_USERNAME` | no       | `hr@salary.demo`                                  | Username of the seeded demo HR account. |
 | `DEMO_HR_PASSWORD` | no       | a password                                        | Password of the seeded demo HR account. |
 | `TEST_DATABASE_URL`| tests only | `postgres://…/salary_workspace_test`            | Disposable DB for integration tests. Never the production DB. |
