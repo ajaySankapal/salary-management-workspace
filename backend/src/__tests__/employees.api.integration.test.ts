@@ -138,6 +138,25 @@ describe('GET /api/employees — filters', () => {
   });
 });
 
+describe('GET /api/employees — sorting', () => {
+  it('sorts by name descending (Zzz Target first)', async () => {
+    const res = await agent.get('/api/employees').query({ sort: 'name', dir: 'desc' });
+    expect(res.status).toBe(200);
+    expect(res.body.rows[0].name).toBe('Zzz Target');
+  });
+
+  it('sorts by name ascending (the Aaa Duplicate rows first)', async () => {
+    const res = await agent.get('/api/employees').query({ sort: 'name', dir: 'asc' });
+    expect(res.body.rows[0].name).toBe('Aaa Duplicate');
+  });
+
+  it('ignores an unknown sort column (falls back to the default name order)', async () => {
+    const res = await agent.get('/api/employees').query({ sort: 'bogus' });
+    expect(res.status).toBe(200);
+    expect(res.body.rows[0].name).toBe('Aaa Duplicate');
+  });
+});
+
 describe('GET /api/employees/filters', () => {
   it('returns the distinct, sorted filter options', async () => {
     const res = await agent.get('/api/employees/filters');

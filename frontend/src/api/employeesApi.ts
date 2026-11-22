@@ -31,12 +31,16 @@ export interface EmployeesPage {
   total: number;
 }
 
+export type EmployeeSortKey = 'id' | 'name' | 'country' | 'jobTitle' | 'salary' | 'joined';
+
 export interface EmployeesQuery {
   page: number;
   search?: string;
   country?: string;
   department?: string;
   jobTitle?: string;
+  sort?: EmployeeSortKey;
+  dir?: 'asc' | 'desc';
 }
 
 export interface FilterOptions {
@@ -86,6 +90,8 @@ function toQueryString(args: EmployeesQuery): string {
   if (args.country) params.set('country', args.country);
   if (args.department) params.set('department', args.department);
   if (args.jobTitle) params.set('jobTitle', args.jobTitle);
+  if (args.sort) params.set('sort', args.sort);
+  if (args.dir) params.set('dir', args.dir);
   return params.toString();
 }
 

@@ -106,4 +106,23 @@ describe('EmployeesPage', () => {
     const requestedUrls = (global.fetch as jest.Mock).mock.calls.map((call) => urlOf(call[0]));
     expect(requestedUrls.some((u: string) => u.includes('country=India'))).toBe(true);
   });
+
+  it('sorts by a column when its header is clicked', async () => {
+    renderPage();
+    await screen.findByText('Alice India');
+
+    // First click → ascending.
+    fireEvent.click(screen.getByRole('button', { name: /current salary/i }));
+    await waitFor(() => {
+      const urls = (global.fetch as jest.Mock).mock.calls.map((c) => urlOf(c[0]));
+      expect(urls.some((u: string) => u.includes('sort=salary') && u.includes('dir=asc'))).toBe(true);
+    });
+
+    // Second click → descending.
+    fireEvent.click(screen.getByRole('button', { name: /current salary/i }));
+    await waitFor(() => {
+      const urls = (global.fetch as jest.Mock).mock.calls.map((c) => urlOf(c[0]));
+      expect(urls.some((u: string) => u.includes('sort=salary') && u.includes('dir=desc'))).toBe(true);
+    });
+  });
 });

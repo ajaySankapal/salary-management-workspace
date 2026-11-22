@@ -1,6 +1,14 @@
 import type { Request, Response } from 'express';
 import { HttpError } from '../errors';
-import { getEmployeeById, getFilterOptions, getSalaryHistory, listEmployees, updateSalary } from './employees.repository';
+import {
+  EMPLOYEE_SORT_KEYS,
+  getEmployeeById,
+  getFilterOptions,
+  getSalaryHistory,
+  listEmployees,
+  updateSalary,
+  type EmployeeSortKey,
+} from './employees.repository';
 
 // A valid salary amount: a positive number within the DB's numeric(12,2) range.
 function isValidAmount(raw: unknown): raw is string | number {
@@ -21,7 +29,14 @@ function str(raw: unknown): string | undefined {
   return typeof raw === 'string' && raw.trim() !== '' ? raw.trim() : undefined;
 }
 
-// GET /api/employees?page=&search=&country=&department=&jobTitle=
+// A valid sort column (from the whitelist), or undefined to fall back to the default.
+function parseSort(raw: unknown): EmployeeSortKey | undefined {
+  return typeof raw === 'string' && (EMPLOYEE_SORT_KEYS as string[]).includes(raw)
+    ? (raw as EmployeeSortKey)
+    : undefined;
+}
+
+// GET /api/employees?page=&search=&country=&department=&jobTitle=&sort=&dir=
 export async function getEmployees(req: Request, res: Response) {
   const page = parsePage(req.query.page);
   if (page === null) {
@@ -34,6 +49,8 @@ export async function getEmployees(req: Request, res: Response) {
     country: str(req.query.country),
     department: str(req.query.department),
     jobTitle: str(req.query.jobTitle),
+    sort: parseSort(req.query.sort),
+    dir: req.query.dir === 'desc' ? 'desc' : req.query.dir === 'asc' ? 'asc' : undefined,
   });
   res.json(result);
 }

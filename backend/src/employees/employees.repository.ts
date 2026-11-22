@@ -21,12 +21,27 @@ const EMPLOYEE_COLUMNS = `
   annual_salary AS salary, currency, to_char(joined_date, 'YYYY-MM-DD') AS "joinedDate"
 `;
 
+// Columns the employee list may be sorted by → the real DB column. A whitelist,
+// because the sort column can't be a bound parameter.
+export type EmployeeSortKey = 'id' | 'name' | 'country' | 'jobTitle' | 'salary' | 'joined';
+const SORT_COLUMNS: Record<EmployeeSortKey, string> = {
+  id: 'id',
+  name: 'name',
+  country: 'country',
+  jobTitle: 'job_title',
+  salary: 'annual_salary',
+  joined: 'joined_date',
+};
+export const EMPLOYEE_SORT_KEYS = Object.keys(SORT_COLUMNS) as EmployeeSortKey[];
+
 export interface EmployeeFilters {
   page: number;
   search?: string;
   country?: string;
   department?: string;
   jobTitle?: string;
+  sort?: EmployeeSortKey;
+  dir?: 'asc' | 'desc';
 }
 
 export interface FilterOptions {
@@ -69,11 +84,18 @@ export async function listEmployees(filters: EmployeeFilters) {
   const { where, params } = buildWhere(filters);
   const offset = (filters.page - 1) * PAGE_SIZE;
 
+  // Build ORDER BY from the whitelist (defaults to name). id is always the final
+  // tiebreaker so paging is stable even when the sort column has duplicates.
+  const sortKey: EmployeeSortKey = filters.sort && SORT_COLUMNS[filters.sort] ? filters.sort : 'name';
+  const direction = filters.dir === 'desc' ? 'DESC' : 'ASC';
+  const column = SORT_COLUMNS[sortKey];
+  const orderBy = sortKey === 'id' ? `id ${direction}` : `${column} ${direction}, id ASC`;
+
   const list = await query<Employee>(
     `SELECT ${EMPLOYEE_COLUMNS}
      FROM employees
      ${where}
-     ORDER BY name, id
+     ORDER BY ${orderBy}
      LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
     [...params, PAGE_SIZE, offset],
   );

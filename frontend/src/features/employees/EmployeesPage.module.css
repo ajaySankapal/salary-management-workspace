@@ -55,10 +55,37 @@
   opacity: 0.6;
 }
 
+.listMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
 .count {
-  margin: 0 0 0.75rem;
+  margin: 0;
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+/* "Sorted by …" indicator with a Clear action. */
+.sortNote {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.sortClear {
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
 }
 
 .card {
@@ -104,6 +131,47 @@
   top: 4rem;
   z-index: 2;
   border-bottom: 1px solid var(--head-border);
+}
+
+/* Clickable column headers for sorting. */
+.sortBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sortBtn:hover {
+  color: var(--text);
+}
+
+.sortActive {
+  color: var(--accent-hover);
+}
+
+.sortIcon,
+.sortIconActive {
+  display: inline-flex;
+  align-items: center;
+  font-size: inherit;
+  line-height: 1;
+}
+
+.sortIcon {
+  color: var(--muted);
+}
+
+.sortIconActive {
+  color: var(--accent-hover);
 }
 
 .table td {
